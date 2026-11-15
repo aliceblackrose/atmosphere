@@ -3,7 +3,7 @@ name: Package desktop preview
 on:
   workflow_dispatch:
   push:
-    branches: [main, "phase-*/**"]
+    branches: [main, "phase-*/**", "feature/**"]
     tags: ["v*"]
 
 permissions:
@@ -27,6 +27,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate Windows icon resources from existing Atmosphere artwork
+        run: |
+          python -m pip install --disable-pip-version-check "Pillow>=11,<13"
+          python tools/make_icon.py
       - name: Test
         run: dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj --configuration Release
       - name: Publish self-contained launcher
@@ -41,6 +48,10 @@ jobs:
             -p:PublishTrimmed=false \
             -p:DebugType=None \
             --output "out/atmosphere-${{ matrix.rid }}"
+      - name: Copy source icon for desktop shortcuts
+        shell: bash
+        run: |
+          cp icon.png "out/atmosphere-${{ matrix.rid }}/Atmosphere.png"
       - name: Upload preview build
         uses: actions/upload-artifact@v4
         with:
