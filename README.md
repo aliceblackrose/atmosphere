@@ -1,4 +1,4 @@
-# Atmosphere
+<p align="center"><img src="icon.png" width="128"/><h1>Atmosphere</h1></p>
 
 **Atmosphere** is a source-available desktop mod launcher for **7 Days to Die**, built with C#/.NET 10 and Avalonia 11.
 
