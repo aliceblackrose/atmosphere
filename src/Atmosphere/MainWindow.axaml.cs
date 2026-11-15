@@ -25,6 +25,9 @@ public partial class MainWindow : Window
 
     private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl, _catalogSearch;
     private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText, _profileStorageText;
+    private readonly TabControl _mainTabs;
+    private readonly TextBlock _overviewGameStatus, _overviewGamePath, _overviewProfileCount;
+    private readonly TextBlock _overviewModCount, _overviewSelectedProfile;
     private readonly TextBlock _modProfileLabel, _modDetails, _releaseInfo, _selectedAsset, _onlineStatus;
     private readonly Button _vanillaButton, _openFolderButton, _downloadButton, _cancelButton;
     private readonly ListBox _profilesList, _archivedProfilesList, _modsList, _gameModsList, _assetsList, _catalogList;
@@ -51,6 +54,12 @@ public partial class MainWindow : Window
         _gameStatus = Find<TextBlock>("GameStatusText");
         _gameDetails = Find<TextBlock>("GameDetailsText");
         _globalStatus = Find<TextBlock>("GlobalStatusText");
+        _mainTabs = Find<TabControl>("MainTabs");
+        _overviewGameStatus = Find<TextBlock>("OverviewGameStatusText");
+        _overviewGamePath = Find<TextBlock>("OverviewGamePathText");
+        _overviewProfileCount = Find<TextBlock>("OverviewProfileCountText");
+        _overviewModCount = Find<TextBlock>("OverviewModCountText");
+        _overviewSelectedProfile = Find<TextBlock>("OverviewSelectedProfileText");
         _vanillaButton = Find<Button>("LaunchButton");
         _openFolderButton = Find<Button>("OpenFolderButton");
         _profilesList = Find<ListBox>("ProfileList");
@@ -89,6 +98,7 @@ public partial class MainWindow : Window
         RefreshGameStatus();
         RefreshGameMods();
         RefreshProfiles();
+        RefreshOverview();
     }
 
     private ModProfile? SelectedProfile =>
@@ -105,6 +115,43 @@ public partial class MainWindow : Window
             ? _currentRelease.ZipAssets[index] : null;
 
     private void Report(string message) => _globalStatus.Text = message;
+
+    private void RefreshOverview()
+    {
+        if (_overviewGameStatus is null || _overviewSelectedProfile is null ||
+            _gamePath is null || _profilesList is null)
+            return; // Avalonia may raise input events while the window is loading.
+
+        var valid = GameLocator.IsValidGameDirectory(_gamePath.Text?.Trim());
+        _overviewGameStatus.Text = valid
+            ? "Installation found • Vanilla play available"
+            : "Game not found • Select your installation in Game";
+        _overviewGamePath.Text = valid
+            ? _gamePath.Text ?? ""
+            : "Open Game to auto-detect Steam or browse for a custom directory.";
+        _overviewProfileCount.Text = _profileRows.Count.ToString();
+        _overviewModCount.Text = _modRows.Count.ToString();
+        _overviewSelectedProfile.Text = SelectedProfile?.Name ?? "None";
+    }
+
+    private void OnNavigateGameClick(object? sender, RoutedEventArgs e) => _mainTabs.SelectedIndex = 1;
+    private void OnNavigateProfilesClick(object? sender, RoutedEventArgs e) => _mainTabs.SelectedIndex = 2;
+    private void OnNavigateModsClick(object? sender, RoutedEventArgs e) => _mainTabs.SelectedIndex = 3;
+    private void OnNavigateOnlineClick(object? sender, RoutedEventArgs e) => _mainTabs.SelectedIndex = 4;
+
+    private void OnRefreshOverviewClick(object? sender, RoutedEventArgs e)
+    {
+        if (_busy) { Report("Finish the current operation before refreshing."); return; }
+        try
+        {
+            RefreshGameStatus();
+            RefreshGameMods();
+            RefreshProfiles();
+            RefreshOverview();
+            Report("Dashboard refreshed.");
+        }
+        catch (Exception ex) { Error("Could not refresh dashboard", ex); }
+    }
     private void Error(string label, Exception exception) =>
         Report(label + ": " + exception.Message);
 
@@ -124,6 +171,7 @@ public partial class MainWindow : Window
         _gameDetails.Text = valid
             ? _gamePath.Text
             : "Choose a folder containing 7DaysToDie.exe, 7DaysToDie.x86_64, or a macOS app bundle.";
+        RefreshOverview();
     }
 
     private void RefreshGameMods()
@@ -225,6 +273,7 @@ public partial class MainWindow : Window
             var selectedIndex = _profileRows.FindIndex(p => p.Id == selectId);
             _profilesList.SelectedIndex = selectedIndex >= 0 ? selectedIndex : (_profileRows.Count > 0 ? 0 : -1);
             RefreshSelectedProfile();
+            RefreshOverview();
         }
         catch (Exception ex) { Error("Unable to load profiles", ex); }
     }
@@ -249,6 +298,7 @@ public partial class MainWindow : Window
             ? "Select a profile first."
             : "Select Refresh storage usage to measure this profile's space.";
         RefreshMods();
+        RefreshOverview();
     }
 
     private void OnCreateProfileClick(object? sender, RoutedEventArgs e)
@@ -606,6 +656,7 @@ public partial class MainWindow : Window
                 .DefaultIfEmpty("No mods installed for this profile.").ToArray();
             _modDetails.Text = p is null ? "Select or create a profile first." :
                 "Found " + _modRows.Count + " modlets in this profile.";
+            RefreshOverview();
         }
         catch (Exception ex) { Error("Could not read profile mods", ex); }
     }
