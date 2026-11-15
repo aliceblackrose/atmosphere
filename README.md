@@ -1,35 +1,48 @@
 # Atmosphere
 
-Atmosphere is a desktop launcher and mod manager for 7 Days to Die, built in independently reviewable phases.
+**Atmosphere** is a source-available desktop mod launcher for **7 Days to Die**, built with C#/.NET 10 and Avalonia 11.
 
-## Current milestone: Phase 1
+It manages modlets in independent profile workspaces, not in your Steam installation. The application is a **v1 preview** pending real-game smoke tests; build/test and package workflows run on GitHub Actions.
 
-The first milestone provides a cross-platform desktop shell, Steam installation discovery (including alternate Steam libraries), a manually selectable game folder, persisted local settings, and a safe vanilla launch through Steam. Mod installation is **not yet implemented**.
+## Features
 
-## Run locally
+- Steam game detection, alternate library paths, custom game folders, vanilla launching
+- Read-only inventory of existing game/user mods with modern `ModInfo.xml` validation
+- Named profiles with separately stored mods, saves, and generated worlds
+- Optional full isolated game copies for overhaul profiles (may require tens of gigabytes)
+- Safeguarded ZIP modlet installation and backup-based replacement, enabling, disabling, and archiving
+- Launch a selected game copy using `-UserDataFolder=<profile>`, with explicit `-noeac` option
+- User-initiated GitHub repository search, Releases lookup, ZIP downloads, SHA-256, and source tracking
+- Windows and Linux automated build/tests; Windows, Linux, and macOS preview package workflows
 
-1. Install the .NET 10 SDK.
-2. Clone this repository.
-3. From the repository root, run:
+## Run from source
 
-    dotnet run --project src/Atmosphere/Atmosphere.csproj
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), then:
+
+```bash
+git clone https://github.com/aliceblackrose/atmosphere.git
+cd atmosphere
+dotnet run --project src/Atmosphere/Atmosphere.csproj
+```
 
 To run tests:
 
-    dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj
+```bash
+dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj
+```
 
-## Technology
+GitHub Actions artifacts provide self-contained platform-specific preview executables on working feature branches. Download from the **Package desktop preview** workflow's artifact list. Windows is the primary supported target until manual platform testing.
 
-- C# / .NET 10 LTS
-- Avalonia 11 desktop UI
-- Local JSON settings (no login, telemetry, or network calls in Phase 1)
+## Documentation
 
-## Roadmap
+- [User guide](docs/USER-GUIDE.md)
+- [Mod format](docs/MOD-FORMAT.md)
+- [Profiles and launching](docs/LAUNCHING.md)
+- [GitHub downloads](docs/DOWNLOADS.md)
+- [Roadmap](docs/ROADMAP.md)
 
-See docs/ROADMAP.md for implementation phases, acceptance criteria, and safety requirements.
+## Safety notes
 
-## Safety and compatibility
+The Steam game directory is never modified by Atmosphere's mod installation workflow. Other game-root mods can **still load**, so use a clean game directory for profile isolation. If you enable DLL code mods, launch without EAC when appropriate and use only mods from trusted publishers. The ZIP SHA-256 is provided for reference, not as a signature guarantee.
 
-The Phase 1 launcher never writes to the game install or Mods folder. It opens the vanilla game via Steam. Future mod installation will use validated archives, staging, backups, and isolated profiles by default. Mods must match the 7 Days to Die version you play, and some code mods require EAC to be disabled.
-
-Atmosphere is an independent community project and is not affiliated with The Fun Pimps or Valve. No license has been selected yet.
+Atmosphere is an independent community project, not affiliated with The Fun Pimps, Valve, or third-party mod authors. **No license has been selected yet; the repository should not be described as open-source until a license is added.**
