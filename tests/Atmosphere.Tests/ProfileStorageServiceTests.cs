@@ -167,11 +167,17 @@ public sealed class ProfileStorageServiceTests
     {
         Directory.CreateDirectory(path);
         if (OperatingSystem.IsMacOS())
-            Directory.CreateDirectory(Path.Combine(path, "7DaysToDie.app"));
+        {
+            var executableFolder = Path.Combine(path, "7DaysToDie.app", "Contents", "MacOS");
+            Directory.CreateDirectory(executableFolder);
+            File.WriteAllText(Path.Combine(executableFolder, "7DaysToDie"), "fake executable");
+        }
         else
+        {
             File.WriteAllText(Path.Combine(path,
                 OperatingSystem.IsWindows() ? "7DaysToDie.exe" : "7DaysToDie.x86_64"),
                 "fake executable");
+        }
         return path;
     }
 }
