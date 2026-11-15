@@ -25,10 +25,13 @@ public partial class MainWindow : Window
     private readonly ListBox _profilesList, _modsList, _gameModsList, _assetsList;
     private readonly CheckBox _noEac, _replace;
     private readonly ProgressBar _progress;
+    private readonly TextBlock _gameCopyStatus;
+    private readonly Button _cancelGameCopyButton;
     private List<ModProfile> _profileRows = new();
     private List<(ModRecord Mod, bool Disabled)> _modRows = new();
     private GitHubRelease? _currentRelease;
     private CancellationTokenSource? _downloadToken;
+    private CancellationTokenSource? _copyToken;
     private bool _busy;
 
     public MainWindow()
@@ -62,6 +65,8 @@ public partial class MainWindow : Window
         _progress = Find<ProgressBar>("DownloadProgressBar");
         _downloadButton = Find<Button>("DownloadInstallButton");
         _cancelButton = Find<Button>("CancelDownloadButton");
+        _gameCopyStatus = Find<TextBlock>("GameCopyStatusText");
+        _cancelGameCopyButton = Find<Button>("CancelGameCopyButton");
 
         _installer = new ProfileModInstaller(_profiles);
         _profileLauncher = new ProfileGameLauncher(_profiles);
@@ -269,6 +274,56 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) { Error("Could not update profile game", ex); }
     }
+
+    private async void OnCreateGameCopyClick(object? sender, RoutedEventArgs e)
+    {
+        var profile = SelectedProfile;
+        var source = _gamePath.Text;
+        if (profile is null || !GameLocator.IsValidGameDirectory(source))
+        {
+            Report("Choose a profile and the game to copy on the Game tab first.");
+            return;
+        }
+        if (_busy) { Report("Another operation is already running."); return; }
+        _busy = true;
+        _copyToken = new CancellationTokenSource();
+        _cancelGameCopyButton.IsEnabled = true;
+        try
+        {
+            _gameCopyStatus.Text = "Scanning files and checking disk space...";
+            var progress = new Progress<GameCopyProgress>(p =>
+            {
+                var percent = p.TotalBytes == 0 ? 100 : p.BytesCopied * 100.0 / p.TotalBytes;
+                _gameCopyStatus.Text = percent.ToString("F1") + "%  •  " +
+                    (p.BytesCopied / 1048576.0).ToString("F0") + " / " +
+                    (p.TotalBytes / 1048576.0).ToString("F0") + " MiB copied";
+            });
+            var copy = new GameCopyService(_profiles);
+            var destination = await copy.CreateCopyAsync(profile.Id, source!, progress, _copyToken.Token);
+            RefreshProfiles(profile.Id);
+            _gameCopyStatus.Text = "Isolated game copy ready: " + destination;
+            Report("Game copy created and assigned to profile " + profile.Name + ".");
+        }
+        catch (OperationCanceledException)
+        {
+            _gameCopyStatus.Text = "Game copying cancelled; incomplete staging files cleaned up.";
+            Report("Game copy cancelled.");
+        }
+        catch (Exception ex)
+        {
+            Error("Could not create isolated game copy", ex);
+            _gameCopyStatus.Text = ex.Message;
+        }
+        finally
+        {
+            _copyToken?.Dispose();
+            _copyToken = null;
+            _cancelGameCopyButton.IsEnabled = false;
+            _busy = false;
+        }
+    }
+
+    private void OnCancelGameCopyClick(object? sender, RoutedEventArgs e) => _copyToken?.Cancel();
 
     private void OnLaunchProfileClick(object? sender, RoutedEventArgs e)
     {

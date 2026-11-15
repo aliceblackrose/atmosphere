@@ -82,6 +82,12 @@
               <TextBox x:Name="VersionNoteTextBox" Watermark="Optional game version note (e.g. V2.0)"/>
               <Button Content="Use current game folder for this profile" HorizontalAlignment="Left"
                       Click="OnSetProfileGameClick"/>
+              <Button Content="Create full isolated game copy (uses disk space)" HorizontalAlignment="Left"
+                      Click="OnCreateGameCopyClick"/>
+              <Button x:Name="CancelGameCopyButton" Content="Cancel game copying" IsEnabled="False"
+                      HorizontalAlignment="Left" Click="OnCancelGameCopyClick"/>
+              <TextBlock x:Name="GameCopyStatusText" Text="No copy operation running."
+                         Foreground="#AABED1" TextWrapping="Wrap"/>
               <CheckBox x:Name="NoEacCheckBox" Content="Launch without EAC (required for code/DLL mods)"
                         Foreground="#E3EAF1"/>
               <Button Content="Launch selected profile" Background="#278471" Foreground="White"

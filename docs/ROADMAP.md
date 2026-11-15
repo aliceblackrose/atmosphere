@@ -8,6 +8,7 @@
 - Phase 4: Explicit GitHub latest release/ZIP download, SHA-256 output; profile-specific launching
 - Phase 5: Desktop UI wiring for game, profiles, mods and online releases
 - Phase 6: CI/package workflows, malicious archive tests, end-user documentation
+- Phase 7: Optional full independent game copies with disk-space preflight and cancellation
 
 ## Remaining release gates
 
@@ -18,7 +19,7 @@
 - Additional mod-host connectors and indexed catalog search
 - Checksum/signature verification against authoritative publisher manifests
 - Automated mod dependency and version resolution
-- Full game copies for binary-overhauling mods (currently profile user-data isolation only)
+- Automated migration or patching of copied game files across Steam versions
 - A repository license selected by the owner
 
 ## Acceptance for a public v1
