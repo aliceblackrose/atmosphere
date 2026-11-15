@@ -11,7 +11,7 @@ namespace Atmosphere.Services;
 /// </summary>
 public sealed class GitHubReleaseService
 {
-    private const long MaxDownload = 512L * 1024 * 1024;
+    private static readonly long MaxDownload = ModArchiveLimits.Default.MaxArchiveBytes;
     private const long MaxMetadata = 2L * 1024 * 1024;
     private static readonly HttpClient SharedClient = NewClient();
     private readonly HttpClient _client;
@@ -20,7 +20,7 @@ public sealed class GitHubReleaseService
 
     private static HttpClient NewClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(45) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
@@ -153,7 +153,7 @@ public sealed class GitHubReleaseService
                 request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > MaxDownload)
-                throw new InvalidDataException("Download exceeds 512 MiB limit.");
+                throw new InvalidDataException("Download exceeds the 16 GiB safety limit.");
 
             await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
             await using var output = new FileStream(path, FileMode.CreateNew,

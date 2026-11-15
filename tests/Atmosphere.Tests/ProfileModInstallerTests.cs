@@ -125,6 +125,63 @@ public sealed class ProfileModInstallerTests
             new ProfileModInstaller(profiles).Installed(profile.Id));
     }
 
+    [Fact]
+    public void InstallZip_WithNestedMultiModPack_InstallsAllModlets()
+    {
+        using var sandbox = new TempDirectory();
+        var profiles = new ProfileStore(Path.Combine(sandbox.Path, "app"));
+        var profile = profiles.Create("Multi Mod Test");
+        var zip = Path.Combine(sandbox.Path, "modpack.zip");
+        WriteZip(zip,
+            ("Pack/Mods/First/ModInfo.xml",
+                "<xml><Name value=\"FirstMod\"/><DisplayName value=\"First Mod\"/><Version value=\"1.0\"/></xml>"),
+            ("Pack/Mods/First/Config/items.xml", "<configs/>"),
+            ("Pack/Mods/Second/ModInfo.xml",
+                "<xml><Name value=\"SecondMod\"/><DisplayName value=\"Second Mod\"/><Version value=\"2.0\"/></xml>"),
+            ("Pack/Mods/Second/Config/blocks.xml", "<configs/>"));
+
+        var imported = new ProfileModInstaller(profiles).InstallZip(profile.Id, zip);
+        Assert.Equal(2, imported.Count);
+        Assert.Contains(imported, mod => mod.Name == "FirstMod");
+        Assert.Contains(imported, mod => mod.Name == "SecondMod");
+        Assert.True(File.Exists(Path.Combine(profiles.GetDirectory(profile.Id), "Mods",
+            "FirstMod", "Config", "items.xml")));
+        Assert.True(File.Exists(Path.Combine(profiles.GetDirectory(profile.Id), "Mods",
+            "SecondMod", "Config", "blocks.xml")));
+    }
+
+    [Fact]
+    public void InstallZip_RejectsArchiveOverConfiguredLimit_WithoutModChanges()
+    {
+        using var sandbox = new TempDirectory();
+        var profiles = new ProfileStore(Path.Combine(sandbox.Path, "app"));
+        var profile = profiles.Create("Limits Test");
+        var zip = Path.Combine(sandbox.Path, "modpack.zip");
+        WriteZip(zip, ("Example/ModInfo.xml", ValidMetadata));
+
+        var limits = new ModArchiveLimits(1, 10000, 10000, 100);
+        var error = Assert.Throws<InvalidDataException>(() =>
+            new ProfileModInstaller(profiles, limits).InstallZip(profile.Id, zip));
+        Assert.Contains("safety limit", error.Message);
+        Assert.Empty(new ProfileModInstaller(profiles).Installed(profile.Id));
+    }
+
+    [Fact]
+    public void InstallZip_RejectsExpandedSizeOverConfiguredLimit_WithoutModChanges()
+    {
+        using var sandbox = new TempDirectory();
+        var profiles = new ProfileStore(Path.Combine(sandbox.Path, "app"));
+        var profile = profiles.Create("Expansion Test");
+        var zip = Path.Combine(sandbox.Path, "modpack.zip");
+        WriteZip(zip, ("Example/ModInfo.xml", ValidMetadata),
+            ("Example/Config/huge.xml", new string('X', 2500)));
+
+        var limits = new ModArchiveLimits(100000, 1024, 1024, 100);
+        Assert.Throws<InvalidDataException>(() =>
+            new ProfileModInstaller(profiles, limits).InstallZip(profile.Id, zip));
+        Assert.Empty(new ProfileModInstaller(profiles).Installed(profile.Id));
+    }
+
     private static void WriteZip(string path, params (string Path, string Content)[] files)
     {
         using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
