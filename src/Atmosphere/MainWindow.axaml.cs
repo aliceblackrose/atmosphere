@@ -253,6 +253,7 @@ public partial class MainWindow : Window
 
     private void OnCreateProfileClick(object? sender, RoutedEventArgs e)
     {
+        if (_busy) { Report("Finish the current operation first."); return; }
         try
         {
             var p = _profiles.Create(_newProfileName.Text ?? "");
@@ -283,6 +284,7 @@ public partial class MainWindow : Window
 
     private void OnRenameProfileClick(object? sender, RoutedEventArgs e)
     {
+        if (_busy) { Report("Finish the current operation first."); return; }
         var p = SelectedProfile;
         if (p is null) { Report("Select a profile first."); return; }
         try
@@ -296,6 +298,7 @@ public partial class MainWindow : Window
 
     private void OnSetProfileGameClick(object? sender, RoutedEventArgs e)
     {
+        if (_busy) { Report("Finish the current operation first."); return; }
         var p = SelectedProfile;
         if (p is null || !GameLocator.IsValidGameDirectory(_gamePath.Text))
         {
