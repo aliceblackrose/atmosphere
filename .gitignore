@@ -1,0 +1,22 @@
+# Build results
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+
+# Machine-local configuration
+.env
+.env.*
+!.env.example
+
+# Packaging
+artifacts/
+publish/
+
+# OS files
+.DS_Store
+Thumbs.db
