@@ -124,7 +124,7 @@ public sealed class GitHubReleaseService
                 var size = asset.TryGetProperty("size", out var s) && s.TryGetInt64(out var n)
                     ? n : -1L;
                 if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                    size is >= 0 and <= MaxDownload && IsAllowedAssetUrl(repository, url))
+                    size >= 0 && size <= MaxDownload && IsAllowedAssetUrl(repository, url))
                     assets.Add(new GitHubReleaseAsset(repository, name, url, size));
             }
         }
@@ -141,7 +141,7 @@ public sealed class GitHubReleaseService
     {
         if (!IsAllowedAssetUrl(asset.Repository, asset.DownloadUrl) ||
             !asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
-            asset.Size is < 0 or > MaxDownload)
+            (asset.Size < 0 || asset.Size > MaxDownload))
             throw new ArgumentException("Only ZIP assets from the selected GitHub Releases repository are allowed.");
 
         Directory.CreateDirectory(destinationDirectory);
