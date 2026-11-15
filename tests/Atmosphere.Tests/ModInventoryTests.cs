@@ -40,6 +40,17 @@ public sealed class ModInventoryTests
     }
 
     [Fact]
+    public void Scan_RejectsMalformedVersion()
+    {
+        using var sandbox = new TempDirectory();
+        var folder = Path.Combine(sandbox.Path, "Example");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, "ModInfo.xml"),
+            "<xml><Name value=\"Example\"/><DisplayName value=\"Example\"/><Version value=\"bad\"/></xml>");
+        Assert.False(Assert.Single(ModInventory.Scan(sandbox.Path)).IsValid);
+    }
+
+    [Fact]
     public void Scan_DisablesExternalEntities()
     {
         using var sandbox = new TempDirectory();

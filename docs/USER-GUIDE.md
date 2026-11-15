@@ -18,4 +18,4 @@
 
 ## Recovery
 
-Atmosphere keeps mod folders under `%APPDATA%/Atmosphere/profiles/{profile-id}` on Windows. Renamed or removed mods are under `Backups/Replaced` or `Backups/Removed`. Archived profiles remain under `archived-profiles`. No operation automatically deletes your game installation.
+Atmosphere keeps mod folders under `%APPDATA%/Atmosphere/profiles/{profile-id}` on Windows. Renamed or removed mods are under `Backups/Replaced` or `Backups/Removed`. Archived profiles remain under `archived-profiles` and can be restored from the Profiles tab. No operation automatically deletes your game installation.

@@ -71,6 +71,11 @@
                        SelectionChanged="OnProfileSelectionChanged"/>
               <TextBox x:Name="NewProfileNameTextBox" Watermark="New profile name"/>
               <Button Content="Create profile" HorizontalAlignment="Stretch" Click="OnCreateProfileClick"/>
+              <TextBlock Text="ARCHIVED PROFILES" Foreground="#7FE5CE" FontWeight="Bold"
+                         Margin="0,9,0,0"/>
+              <ListBox x:Name="ArchivedProfilesList" Height="105" Background="#192C42"/>
+              <Button Content="Restore selected archive" HorizontalAlignment="Stretch"
+                      Click="OnRestoreProfileClick"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="14">

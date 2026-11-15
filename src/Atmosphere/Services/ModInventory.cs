@@ -12,6 +12,10 @@ public static class ModInventory
     private static readonly Regex ValidName = new(
         @"^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+    private static readonly Regex ValidVersion = new(
+        @"^[0-9]+\.[0-9]+(\.[0-9]+){0,2}$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     public static IReadOnlyList<ModRecord> Scan(string? modsDirectory)
     {
         if (string.IsNullOrWhiteSpace(modsDirectory) || !Directory.Exists(modsDirectory))
@@ -74,7 +78,8 @@ public static class ModInventory
             var warning = legacy ? "Legacy ModInfo format; current game versions require v2." :
                 !ValidName.IsMatch(id) ? "Missing or invalid internal Name (letters, digits, _ and - only)." :
                 string.IsNullOrWhiteSpace(display) ? "Missing DisplayName required by current game versions." :
-                string.IsNullOrWhiteSpace(version) ? "Missing Version; compatibility cannot be determined." : "";
+                string.IsNullOrWhiteSpace(version) ? "Missing Version; compatibility cannot be determined." :
+                !ValidVersion.IsMatch(version) ? "Version must be numeric major.minor[.build[.revision]]." : "";
             var hasDll = Directory.EnumerateFiles(directory, "*.dll", new EnumerationOptions
             {
                 RecurseSubdirectories = true,

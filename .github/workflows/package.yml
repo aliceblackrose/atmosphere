@@ -3,7 +3,7 @@ name: Package desktop preview
 on:
   workflow_dispatch:
   push:
-    branches: ["phase-*/**"]
+    branches: [main, "phase-*/**"]
     tags: ["v*"]
 
 permissions:

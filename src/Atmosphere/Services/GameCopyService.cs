@@ -34,6 +34,10 @@ public sealed class GameCopyService
             Descendant(profileDirectory, source) || Descendant(source, profileDirectory))
             throw new IOException("Game source and target profile directories must not overlap.");
 
+        if (!Directory.Exists(profileDirectory) ||
+            (File.GetAttributes(profileDirectory) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Profile working directory is missing or linked.");
+
         var destination = Path.Combine(profileDirectory, "GameCopy");
         if (Directory.Exists(destination)) throw new IOException(
             "This profile already has a GameCopy. Choose or archive another profile to make another copy.");

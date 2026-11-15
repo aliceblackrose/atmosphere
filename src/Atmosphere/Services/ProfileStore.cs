@@ -80,7 +80,7 @@ public sealed class ProfileStore
 
     public void Archive(string id)
     {
-        Get(id);
+        var profile = Get(id);
         var source = GetDirectory(id);
         var archived = Path.Combine(DataRoot, "archived-profiles", id);
         if (Directory.Exists(archived)) throw new IOException("An archive with this profile ID already exists.");
@@ -94,6 +94,8 @@ public sealed class ProfileStore
                 Directory.Move(source, archived);
                 moved = true;
             }
+            File.WriteAllText(Path.Combine(archived, "profile.json"),
+                JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true }));
             Write(List().Where(p => p.Id != id).ToArray());
         }
         catch
@@ -102,6 +104,67 @@ public sealed class ProfileStore
                 Directory.Move(archived, source);
             throw;
         }
+    }
+
+    public IReadOnlyList<ModProfile> ListArchived()
+    {
+        var archiveRoot = Path.Combine(DataRoot, "archived-profiles");
+        if (!Directory.Exists(archiveRoot)) return Array.Empty<ModProfile>();
+
+        var archived = new List<ModProfile>();
+        foreach (var directory in Directory.EnumerateDirectories(archiveRoot))
+        {
+            if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                continue;
+            var id = Path.GetFileName(directory);
+            if (!Guid.TryParseExact(id, "N", out var guid) || guid.ToString("N") != id)
+                continue;
+
+            var metadata = Path.Combine(directory, "profile.json");
+            ModProfile? profile = null;
+            if (File.Exists(metadata))
+            {
+                try { profile = JsonSerializer.Deserialize<ModProfile>(File.ReadAllText(metadata)); }
+                catch (JsonException) { /* Preserve unreadable archives, never overwrite. */ }
+            }
+            archived.Add(profile is not null && profile.Id == id
+                ? profile : new ModProfile { Id = id, Name = "Archived " + id[..8] });
+        }
+        return archived.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    public ModProfile Restore(string id)
+    {
+        ValidateId(id);
+        var profile = ListArchived().SingleOrDefault(x => x.Id == id)
+            ?? throw new KeyNotFoundException("Archived profile not found.");
+        if (List().Any(x => x.Id == id))
+            throw new IOException("Profile already exists in the active list.");
+
+        var archived = Path.Combine(DataRoot, "archived-profiles", id);
+        var restored = Path.Combine(DataRoot, "profiles", id);
+        if (Directory.Exists(restored)) throw new IOException("Restore folder already exists.");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(restored)!);
+        Directory.Move(archived, restored);
+        try
+        {
+            Write(List().Append(profile).ToArray());
+        }
+        catch
+        {
+            if (Directory.Exists(restored) && !Directory.Exists(archived))
+                Directory.Move(restored, archived);
+            throw;
+        }
+
+        var oldMetadata = Path.Combine(restored, "profile.json");
+        if (File.Exists(oldMetadata))
+        {
+            try { File.Delete(oldMetadata); }
+            catch (IOException) { /* Metadata is harmless if it remains. */ }
+        }
+        return profile;
     }
 
     private ModProfile Update(string id, Func<ModProfile, ModProfile> change)

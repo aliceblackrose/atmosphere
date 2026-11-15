@@ -23,12 +23,13 @@ public partial class MainWindow : Window
     private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText;
     private readonly TextBlock _modProfileLabel, _modDetails, _releaseInfo, _selectedAsset, _onlineStatus;
     private readonly Button _vanillaButton, _openFolderButton, _downloadButton, _cancelButton;
-    private readonly ListBox _profilesList, _modsList, _gameModsList, _assetsList, _catalogList;
+    private readonly ListBox _profilesList, _archivedProfilesList, _modsList, _gameModsList, _assetsList, _catalogList;
     private readonly CheckBox _noEac, _replace;
     private readonly ProgressBar _progress;
     private readonly TextBlock _gameCopyStatus;
     private readonly Button _cancelGameCopyButton;
     private List<ModProfile> _profileRows = new();
+    private List<ModProfile> _archivedRows = new();
     private List<(ModRecord Mod, bool Disabled)> _modRows = new();
     private GitHubRelease? _currentRelease;
     private IReadOnlyList<GitHubCatalogEntry> _catalogRows = Array.Empty<GitHubCatalogEntry>();
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
         _vanillaButton = Find<Button>("LaunchButton");
         _openFolderButton = Find<Button>("OpenFolderButton");
         _profilesList = Find<ListBox>("ProfileList");
+        _archivedProfilesList = Find<ListBox>("ArchivedProfilesList");
         _newProfileName = Find<TextBox>("NewProfileNameTextBox");
         _renameProfile = Find<TextBox>("RenameProfileTextBox");
         _versionNote = Find<TextBox>("VersionNoteTextBox");
@@ -210,6 +212,8 @@ public partial class MainWindow : Window
         {
             selectId ??= SelectedProfile?.Id;
             _profileRows = _profiles.List().ToList();
+            _archivedRows = _profiles.ListArchived().ToList();
+            _archivedProfilesList.ItemsSource = _archivedRows.Select(p => p.Name).ToArray();
             _profilesList.ItemsSource = _profileRows.Select(p => p.Name +
                 (string.IsNullOrWhiteSpace(p.GameVersionNote) ? "" : "  [" + p.GameVersionNote + "]")).ToArray();
             var selectedIndex = _profileRows.FindIndex(p => p.Id == selectId);
@@ -248,6 +252,24 @@ public partial class MainWindow : Window
             Report("Created isolated profile " + p.Name + ".");
         }
         catch (Exception ex) { Error("Could not create profile", ex); }
+    }
+
+    private void OnRestoreProfileClick(object? sender, RoutedEventArgs e)
+    {
+        if (_busy) { Report("Finish the current operation before restoring a profile."); return; }
+        var index = _archivedProfilesList.SelectedIndex;
+        if (index < 0 || index >= _archivedRows.Count)
+        {
+            Report("Choose an archived profile first.");
+            return;
+        }
+        try
+        {
+            var profile = _profiles.Restore(_archivedRows[index].Id);
+            RefreshProfiles(profile.Id);
+            Report("Restored profile " + profile.Name + " with its mods and saves.");
+        }
+        catch (Exception ex) { Error("Unable to restore profile", ex); }
     }
 
     private void OnRenameProfileClick(object? sender, RoutedEventArgs e)

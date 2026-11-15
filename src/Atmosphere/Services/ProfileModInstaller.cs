@@ -20,15 +20,33 @@ public sealed class ProfileModInstaller
 
     public ProfileModInstaller(ProfileStore profiles) => _profiles = profiles;
 
+    private string GetSafeDirectory(string profileId)
+    {
+        var profile = _profiles.GetDirectory(profileId);
+        // Do not follow an externally replaced Mods, backup, or staging symlink.
+        if (!Directory.Exists(profile) ||
+            (File.GetAttributes(profile) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Profile workspace is missing or linked to another location.");
+
+        foreach (var child in new[] { "Mods", "DisabledMods", "Backups", ".staging" })
+        {
+            var path = Path.Combine(profile, child);
+            if (Directory.Exists(path) &&
+                (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Linked profile directories are not supported: " + child);
+        }
+        return profile;
+    }
+
     public IReadOnlyList<ModRecord> Installed(string profileId) =>
-        ModInventory.Scan(Path.Combine(_profiles.GetDirectory(profileId), "Mods"));
+        ModInventory.Scan(Path.Combine(GetSafeDirectory(profileId), "Mods"));
 
     public IReadOnlyList<ModRecord> Disabled(string profileId) =>
-        ModInventory.Scan(Path.Combine(_profiles.GetDirectory(profileId), "DisabledMods"));
+        ModInventory.Scan(Path.Combine(GetSafeDirectory(profileId), "DisabledMods"));
 
     public IReadOnlyList<ModRecord> InstallZip(string profileId, string zipPath, bool replaceExisting = false)
     {
-        var profileRoot = _profiles.GetDirectory(profileId);
+        var profileRoot = GetSafeDirectory(profileId);
         if (!File.Exists(zipPath)) throw new FileNotFoundException("ZIP archive not found.", zipPath);
         if (new FileInfo(zipPath).Length > MaxArchiveBytes)
             throw new InvalidDataException("ZIP exceeds the 512 MiB limit.");
@@ -128,7 +146,7 @@ public sealed class ProfileModInstaller
     public void SetEnabled(string profileId, string internalId, bool enabled)
     {
         ValidateInternalName(internalId);
-        var root = _profiles.GetDirectory(profileId);
+        var root = GetSafeDirectory(profileId);
         var from = Path.Combine(root, enabled ? "DisabledMods" : "Mods", internalId);
         var to = Path.Combine(root, enabled ? "Mods" : "DisabledMods", internalId);
         EnsureManagedDirectory(from);
@@ -140,7 +158,7 @@ public sealed class ProfileModInstaller
     public string ArchiveMod(string profileId, string internalId, bool disabled = false)
     {
         ValidateInternalName(internalId);
-        var root = _profiles.GetDirectory(profileId);
+        var root = GetSafeDirectory(profileId);
         var from = Path.Combine(root, disabled ? "DisabledMods" : "Mods", internalId);
         EnsureManagedDirectory(from);
         var backup = Path.Combine(root, "Backups", "Removed",

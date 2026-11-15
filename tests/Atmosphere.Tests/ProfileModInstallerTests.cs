@@ -108,6 +108,23 @@ public sealed class ProfileModInstallerTests
             new ProfileModInstaller(profiles).InstallZip(profile.Id, archivePath));
     }
 
+    [Fact]
+    public void RefusesExternallyLinkedModsFolder()
+    {
+        if (OperatingSystem.IsWindows()) return;
+        using var sandbox = new TempDirectory();
+        var profiles = new ProfileStore(Path.Combine(sandbox.Path, "app"));
+        var profile = profiles.Create("Test");
+        var mods = Path.Combine(profiles.GetDirectory(profile.Id), "Mods");
+        var external = Path.Combine(sandbox.Path, "external");
+        Directory.CreateDirectory(external);
+        Directory.Delete(mods);
+        Directory.CreateSymbolicLink(mods, external);
+
+        Assert.Throws<IOException>(() =>
+            new ProfileModInstaller(profiles).Installed(profile.Id));
+    }
+
     private static void WriteZip(string path, params (string Path, string Content)[] files)
     {
         using var archive = ZipFile.Open(path, ZipArchiveMode.Create);

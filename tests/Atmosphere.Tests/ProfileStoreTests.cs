@@ -22,6 +22,14 @@ public sealed class ProfileStoreTests
         Assert.Empty(store.List());
         Assert.Equal("keep me", File.ReadAllText(Path.Combine(
             directory.Path, "archived-profiles", p.Id, "custom.txt")));
+        Assert.Single(store.ListArchived());
+
+        var restored = store.Restore(p.Id);
+        Assert.Equal("Challenge", restored.Name);
+        Assert.Single(store.List());
+        Assert.Empty(store.ListArchived());
+        Assert.Equal("keep me", File.ReadAllText(Path.Combine(
+            store.GetDirectory(p.Id), "custom.txt")));
     }
 
     [Fact]
