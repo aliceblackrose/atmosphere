@@ -122,6 +122,8 @@
               <Button Content="Disable selected" Margin="0,0,10,10" Padding="16,9" Click="OnDisableModClick"/>
               <Button Content="Archive selected mod" Margin="0,0,10,10" Padding="16,9" Click="OnArchiveModClick"/>
               <Button Content="Refresh mods" Margin="0,0,10,10" Padding="16,9" Click="OnRefreshModsClick"/>
+              <Button Content="Find selected mod's source" Margin="0,0,10,10" Padding="16,9"
+                      Click="OnFindModSourceClick"/>
             </WrapPanel>
             <TextBlock Text="Archive never permanently deletes a mod: it is moved into the profile's Backups/Removed directory."
                        Foreground="#A9BBD0" TextWrapping="Wrap"/>
@@ -132,6 +134,15 @@
       <TabItem Header="Online">
         <ScrollViewer>
           <StackPanel Margin="16" Spacing="14">
+            <TextBlock Text="SEARCH PUBLIC MOD REPOSITORIES" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
+            <TextBlock Text="Search public GitHub repositories. Results are unverified and not a curated mod marketplace."
+                       TextWrapping="Wrap" Foreground="#B9CADB"/>
+            <TextBox x:Name="CatalogSearchTextBox" Watermark="Search topic, e.g. vehicles or UI"/>
+            <Button Content="Search GitHub mod repositories" HorizontalAlignment="Left"
+                    Click="OnCatalogSearchClick"/>
+            <ListBox x:Name="CatalogResultsList" Height="145" Background="#192C42"/>
+            <Button Content="Use selected repository" HorizontalAlignment="Left"
+                    Click="OnUseCatalogResultClick"/>
             <TextBlock Text="GITHUB RELEASES" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
             <TextBlock Text="Enter a trusted mod author's GitHub repository. Atmosphere reads its latest release only when you request it."
                        TextWrapping="Wrap" Foreground="#B9CADB"/>

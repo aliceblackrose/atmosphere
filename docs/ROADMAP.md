@@ -9,6 +9,7 @@
 - Phase 5: Desktop UI wiring for game, profiles, mods and online releases
 - Phase 6: CI/package workflows, malicious archive tests, end-user documentation
 - Phase 7: Optional full independent game copies with disk-space preflight and cancellation
+- Phase 8: GitHub repository search and installed-mod download provenance
 
 ## Remaining release gates
 
@@ -16,7 +17,7 @@
 - Linux and macOS manual checks of Steam runtime/executable discovery
 - Screenshots, icon assets, accessibility testing, and UX polish
 - Binary signing/notarization, native installers, crash diagnostics
-- Additional mod-host connectors and indexed catalog search
+- Additional mod-host connectors, curated catalog and advanced search filters
 - Checksum/signature verification against authoritative publisher manifests
 - Automated mod dependency and version resolution
 - Automated migration or patching of copied game files across Steam versions

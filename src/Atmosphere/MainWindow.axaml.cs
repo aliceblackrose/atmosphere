@@ -14,15 +14,16 @@ public partial class MainWindow : Window
     private readonly LauncherSettingsStore _settingsStore = new();
     private readonly ProfileStore _profiles = new();
     private readonly GitHubReleaseService _github = new();
+    private readonly ModSourceStore _sources;
     private readonly ProfileModInstaller _installer;
     private readonly ProfileGameLauncher _profileLauncher;
     private readonly LauncherSettings _settings;
 
-    private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl;
+    private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl, _catalogSearch;
     private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText;
     private readonly TextBlock _modProfileLabel, _modDetails, _releaseInfo, _selectedAsset, _onlineStatus;
     private readonly Button _vanillaButton, _openFolderButton, _downloadButton, _cancelButton;
-    private readonly ListBox _profilesList, _modsList, _gameModsList, _assetsList;
+    private readonly ListBox _profilesList, _modsList, _gameModsList, _assetsList, _catalogList;
     private readonly CheckBox _noEac, _replace;
     private readonly ProgressBar _progress;
     private readonly TextBlock _gameCopyStatus;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private List<ModProfile> _profileRows = new();
     private List<(ModRecord Mod, bool Disabled)> _modRows = new();
     private GitHubRelease? _currentRelease;
+    private IReadOnlyList<GitHubCatalogEntry> _catalogRows = Array.Empty<GitHubCatalogEntry>();
     private CancellationTokenSource? _downloadToken;
     private CancellationTokenSource? _copyToken;
     private bool _busy;
@@ -58,6 +60,8 @@ public partial class MainWindow : Window
         _modDetails = Find<TextBlock>("ModDetailsText");
         _replace = Find<CheckBox>("ReplaceExistingCheckBox");
         _githubUrl = Find<TextBox>("GitHubUrlTextBox");
+        _catalogSearch = Find<TextBox>("CatalogSearchTextBox");
+        _catalogList = Find<ListBox>("CatalogResultsList");
         _releaseInfo = Find<TextBlock>("ReleaseInfoText");
         _assetsList = Find<ListBox>("ReleaseAssetsList");
         _selectedAsset = Find<TextBlock>("SelectedAssetText");
@@ -69,6 +73,7 @@ public partial class MainWindow : Window
         _cancelGameCopyButton = Find<Button>("CancelGameCopyButton");
 
         _installer = new ProfileModInstaller(_profiles);
+        _sources = new ModSourceStore(_profiles);
         _profileLauncher = new ProfileGameLauncher(_profiles);
         _settings = _settingsStore.Load();
         _gamePath.Text = GameLocator.IsValidGameDirectory(_settings.GameDirectory)
@@ -386,6 +391,15 @@ public partial class MainWindow : Window
             (m.ContainsDll ? "  •  Code mod: EAC must be off" : "") +
             (m.IsValid ? "" : "\nWarning: " + m.Warning) +
             "\n" + m.Description;
+        try
+        {
+            var source = SelectedProfile is { } p
+                ? _sources.List(p.Id).FirstOrDefault(s => s.InternalName == m.Name) : null;
+            if (source is not null)
+                _modDetails.Text += "\nGitHub: " + source.Repository +
+                    " @ " + source.ReleaseTag + " (download SHA-256: " + source.DownloadSha256[..12] + "…)";
+        }
+        catch (Exception ex) { Error("Could not read mod source metadata", ex); }
     }
 
     private void OnRefreshModsClick(object? sender, RoutedEventArgs e)
@@ -415,6 +429,7 @@ public partial class MainWindow : Window
             Report("Validating and installing mod ZIP...");
             var installed = await Task.Run(() =>
                 _installer.InstallZip(p.Id, path, replace));
+            _sources.Forget(p.Id, installed.Select(x => x.Name));
             RefreshMods();
             Report("Installed " + string.Join(", ", installed.Select(m => m.DisplayName)) + " into " + p.Name + ".");
         }
@@ -453,10 +468,53 @@ public partial class MainWindow : Window
         try
         {
             var path = _installer.ArchiveMod(p.Id, row.Value.Mod.FolderName, row.Value.Disabled);
+            _sources.Forget(p.Id, new[] { row.Value.Mod.Name });
             RefreshMods();
             Report("Archived mod to " + path + ". Nothing was permanently deleted.");
         }
         catch (Exception ex) { Error("Could not archive mod", ex); }
+    }
+
+    private void OnFindModSourceClick(object? sender, RoutedEventArgs e)
+    {
+        var p = SelectedProfile;
+        var mod = SelectedMod;
+        if (p is null || mod is null) { Report("Select a mod first."); return; }
+        try
+        {
+            var source = _sources.List(p.Id).FirstOrDefault(x => x.InternalName == mod.Value.Mod.Name);
+            if (source is null) { Report("No GitHub source recorded; this may be a manually installed ZIP."); return; }
+            _githubUrl.Text = "https://github.com/" + source.Repository;
+            Report("Source: " + source.Repository + " @ " + source.ReleaseTag +
+                ". Open Online and check the latest release to update.");
+        }
+        catch (Exception ex) { Error("Could not locate mod source", ex); }
+    }
+
+    private async void OnCatalogSearchClick(object? sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            Report("Searching public GitHub repositories...");
+            _catalogRows = await _github.SearchCatalogAsync(_catalogSearch.Text ?? "");
+            _catalogList.ItemsSource = _catalogRows
+                .Select(x => x.Repository + "  ★" + x.Stars + "  — " + x.Description)
+                .DefaultIfEmpty("No matching GitHub repositories.").ToArray();
+            _catalogList.SelectedIndex = _catalogRows.Count > 0 ? 0 : -1;
+            Report("Found " + _catalogRows.Count + " public repositories. Verify each author before installing.");
+        }
+        catch (Exception ex) { Error("GitHub repository search failed", ex); }
+        finally { _busy = false; }
+    }
+
+    private void OnUseCatalogResultClick(object? sender, RoutedEventArgs e)
+    {
+        var index = _catalogList.SelectedIndex;
+        if (index < 0 || index >= _catalogRows.Count) { Report("Select a repository first."); return; }
+        _githubUrl.Text = "https://github.com/" + _catalogRows[index].Repository;
+        Report("Repository selected. Click 'Check latest release' to inspect ZIP assets.");
     }
 
     private async void OnCheckReleaseClick(object? sender, RoutedEventArgs e)
@@ -527,6 +585,8 @@ public partial class MainWindow : Window
             var replace = _replace.IsChecked == true;
             var installed = await Task.Run(() =>
                 _installer.InstallZip(p.Id, downloadedFile, replace));
+            _sources.Record(p.Id, installed.Select(x => x.Name), asset.Repository,
+                _currentRelease?.Tag ?? "", asset.Name, result.Sha256);
             RefreshMods();
             _progress.Value = 100;
             _onlineStatus.Text = "Installed: " + string.Join(", ", installed.Select(x => x.DisplayName)) +

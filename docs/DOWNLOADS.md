@@ -1,7 +1,9 @@
-# GitHub Releases downloads
+# GitHub search and Releases downloads
 
-The Online workflow is **opt-in**. Enter a public GitHub repository URL and click Check Latest. Atmosphere uses GitHub's public REST release endpoint, shows ZIP assets and version tags, and downloads only when Install is selected. Downloads have a 512 MiB size limit and compute SHA-256.
+The **Online** workflow is opt-in. You can search public GitHub repositories (these are **not curated or verified**), select a result, or paste a known GitHub repository URL. Click **Check latest release** to inspect ZIP assets. Download only after selecting an asset and profile.
 
-A GitHub asset's checksum is displayed for provenance; it is *not* equivalent to verifying a trusted publisher signature. Downloaded code mods can execute inside the game. Only install mods from sources you trust.
+Downloads are capped at 512 MiB and hashed with SHA-256. The app records the GitHub repository, release tag, ZIP asset, and hash for the installed modlets. Select an installed mod and click **Find selected mod's source** to load its repository URL into the Online tab. To update a mod, check the latest release and select **Replace existing** on the My Mods tab before installing.
 
-The current catalog is URL-driven (one GitHub repository at a time), not a global indexed marketplace. Auto-update polling, dependency resolution, and third-party hosting are not implemented.
+A download's SHA-256 is informational and **not** publisher-signature verification. Code mods can run arbitrary game code, so check the publisher and compatibility. GitHub API requests are rate limited; repeated searches or release checks may get HTTP 403/429.
+
+There is no automatic background fetching, dependency solver, curated listing, or hands-off update.

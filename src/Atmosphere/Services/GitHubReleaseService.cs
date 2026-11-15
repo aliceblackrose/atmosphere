@@ -48,6 +48,49 @@ public sealed class GitHubReleaseService
         return owner + "/" + repo;
     }
 
+    public async Task<IReadOnlyList<GitHubCatalogEntry>> SearchCatalogAsync(
+        string keywords, CancellationToken cancellationToken = default)
+    {
+        var search = keywords.Trim();
+        if (search.Length is < 2 or > 90)
+            throw new ArgumentException("Enter 2–90 search characters.");
+
+        var query = Uri.EscapeDataString("7 days to die " + search + " mod");
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            "https://api.github.com/search/repositories?q=" + query +
+            "&sort=stars&order=desc&per_page=20");
+        request.Headers.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
+        using var response = await _client.SendAsync(
+            request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        if (response.Content.Headers.ContentLength > MaxMetadata)
+            throw new InvalidDataException("GitHub search response is too large.");
+
+        await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var buffer = new MemoryStream();
+        await CopyLimitedAsync(input, buffer, MaxMetadata, null, cancellationToken);
+        buffer.Position = 0;
+        using var json = await JsonDocument.ParseAsync(buffer, cancellationToken: cancellationToken);
+        var results = new List<GitHubCatalogEntry>();
+        if (!json.RootElement.TryGetProperty("items", out var items) ||
+            items.ValueKind != JsonValueKind.Array) return results;
+
+        foreach (var item in items.EnumerateArray())
+        {
+            var repo = item.TryGetProperty("full_name", out var fullName)
+                ? fullName.GetString() ?? "" : "";
+            try { ParseRepository("https://github.com/" + repo); }
+            catch (ArgumentException) { continue; }
+            var description = item.TryGetProperty("description", out var desc) &&
+                desc.ValueKind == JsonValueKind.String ? desc.GetString() ?? "" : "";
+            var stars = item.TryGetProperty("stargazers_count", out var rating) &&
+                rating.TryGetInt32(out var count) ? count : 0;
+            results.Add(new GitHubCatalogEntry(repo,
+                description.Length > 300 ? description[..300] : description, stars));
+        }
+        return results;
+    }
+
     public async Task<GitHubRelease> GetLatestAsync(string githubUrl,
         CancellationToken cancellationToken = default)
     {

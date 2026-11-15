@@ -8,3 +8,5 @@ public sealed record GitHubRelease(
     IReadOnlyList<GitHubReleaseAsset> ZipAssets);
 
 public sealed record DownloadResult(string FilePath, string Sha256, long Bytes);
+
+public sealed record GitHubCatalogEntry(string Repository, string Description, int Stars);

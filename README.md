@@ -12,7 +12,7 @@ It manages modlets in independent profile workspaces, not in your Steam installa
 - Optional full isolated game copies for overhaul profiles (may require tens of gigabytes)
 - Safeguarded ZIP modlet installation and backup-based replacement, enabling, disabling, and archiving
 - Launch a selected game copy using `-UserDataFolder=<profile>`, with explicit `-noeac` option
-- User-initiated GitHub Releases lookup, ZIP asset selection, download limits, and SHA-256 reporting
+- User-initiated GitHub repository search, Releases lookup, ZIP downloads, SHA-256, and source tracking
 - Windows and Linux automated build/tests; Windows, Linux, and macOS preview package workflows
 
 ## Run from source
