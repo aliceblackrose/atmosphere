@@ -10,6 +10,7 @@ It manages modlets in independent profile workspaces, not in your Steam installa
 - Read-only inventory of existing game/user mods with modern `ModInfo.xml` validation
 - Named profiles with separately stored mods, saves, and generated worlds
 - Optional full isolated game copies for overhaul profiles (may require tens of gigabytes)
+- Profile storage management: usage breakdown, open profile folder, delete owned game copies, clear backups, and permanently delete active or archived profiles with typed confirmation
 - Multi-mod ZIP pack installation and multiple ZIP selection, with 16 GiB per-ZIP / 64 GiB unpacked limits, disk preflight, and backup-based replacement
 - Launch a selected game copy using `-UserDataFolder=<profile>`, with explicit `-noeac` option
 - User-initiated GitHub repository search, Releases lookup, ZIP downloads, SHA-256, and source tracking
