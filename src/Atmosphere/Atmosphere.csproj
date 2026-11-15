@@ -8,9 +8,15 @@
     <RootNamespace>Atmosphere</RootNamespace>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' And Exists('Assets/Atmosphere.ico')">
+    <!-- Generates a real Windows Explorer/taskbar executable icon in release packages. -->
+    <ApplicationIcon>Assets/Atmosphere.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.23" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <!-- Source artwork is kept in the repository root; link it into Avalonia's resource bundle. -->
+    <AvaloniaResource Include="../../icon.png" Link="Assets/icon.png" />
   </ItemGroup>
 </Project>

@@ -1,203 +1,442 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Atmosphere.MainWindow"
-        Title="Atmosphere — 7 Days to Die Mod Launcher"
-        Width="1100" Height="790" MinWidth="790" MinHeight="625"
-        Background="#0C1320">
-  <DockPanel>
-    <Border DockPanel.Dock="Top" Background="#13243A" Padding="30,22">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Grid.Column="0" Spacing="6">
-          <TextBlock Text="A T M O S P H E R E" FontSize="15" FontWeight="Bold" Foreground="#83E7CF"/>
-          <TextBlock Text="Your wasteland. Your rules." FontSize="26" FontWeight="Bold" Foreground="White"/>
-          <TextBlock Text="7 Days to Die • Profiles, modlets, and Steam launching" Foreground="#AFBCCF" FontSize="13"/>
+        Title="Atmosphere  •  7 Days to Die Mod Launcher"
+        Icon="/Assets/icon.png"
+        Width="1320" Height="860" MinWidth="980" MinHeight="680"
+        Background="#0D1423">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <!-- Branded masthead -->
+    <Border Grid.Row="0" Background="#10192C" BorderBrush="#29344D"
+            BorderThickness="0,0,0,1" Padding="28,16">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <Border Background="#26304B" CornerRadius="13" Width="58" Height="58">
+            <Image Source="/Assets/icon.png" Width="53" Height="53" Stretch="Uniform"/>
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="3">
+            <TextBlock Text="ATMOSPHERE" FontSize="21" FontWeight="Bold" LetterSpacing="2"
+                       Foreground="#F2F4FF"/>
+            <TextBlock Text="Your wasteland. Your rules." FontSize="12" Foreground="#9AA9C1"/>
+          </StackPanel>
         </StackPanel>
-        <Border Grid.Column="1" VerticalAlignment="Center" Background="#23483E" CornerRadius="9" Padding="14,8">
-          <TextBlock Text="v1.0 preview" Foreground="#A8F5D7" FontWeight="SemiBold"/>
-        </Border>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Border BorderBrush="#53649A" Background="#212C47" BorderThickness="1"
+                  CornerRadius="16" Padding="12,7">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Ellipse Width="7" Height="7" Fill="#71D6AE" VerticalAlignment="Center"/>
+              <TextBlock Text="DESKTOP PREVIEW" FontSize="11" FontWeight="Bold" Foreground="#B7C9F0"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
       </Grid>
     </Border>
 
-    <Border DockPanel.Dock="Bottom" Background="#111E30" Padding="24,14">
-      <StackPanel Spacing="5">
-        <TextBlock x:Name="GlobalStatusText" Text="Ready." Foreground="#E3EBF4" TextWrapping="Wrap"/>
-        <TextBlock Text="Atmosphere keeps profile data outside your game install. Downloaded mod code is not sandboxed by the game."
-                   FontSize="11" Foreground="#8295AA" TextWrapping="Wrap"/>
-      </StackPanel>
-    </Border>
-
-    <TabControl Margin="22,16" Background="#0C1320">
-      <TabItem Header="Game">
-        <ScrollViewer>
-          <StackPanel Margin="16" Spacing="18">
-            <TextBlock Text="GAME INSTALLATION" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-            <TextBlock Text="Find a Steam library or choose another 7 Days to Die game copy. Vanilla launching does not change game files."
-                       TextWrapping="Wrap" Foreground="#BACBDA"/>
-            <TextBox x:Name="GamePathTextBox" Watermark="Path to your 7 Days to Die folder" MinHeight="42"
-                     TextChanged="OnGamePathChanged"/>
-            <WrapPanel Orientation="Horizontal">
-              <Button Content="Browse game..." Margin="0,0,10,10" Padding="16,9" Click="OnBrowseClick"/>
-              <Button Content="Auto-detect" Margin="0,0,10,10" Padding="16,9" Click="OnDetectClick"/>
-              <Button Content="Save game path" Margin="0,0,10,10" Padding="16,9" Click="OnSaveClick"/>
-              <Button x:Name="OpenFolderButton" Content="Open game folder" Margin="0,0,10,10" Padding="16,9"
-                      Click="OnOpenFolderClick"/>
-            </WrapPanel>
-            <Border Background="#192C42" CornerRadius="10" Padding="17">
-              <StackPanel Spacing="7">
-                <TextBlock x:Name="GameStatusText" Foreground="White" FontWeight="Bold"/>
-                <TextBlock x:Name="GameDetailsText" Foreground="#B9CBDC" TextWrapping="Wrap"/>
-              </StackPanel>
-            </Border>
-            <Button x:Name="LaunchButton" Content="Play vanilla through Steam" Background="#278471"
-                    Foreground="White" FontWeight="Bold" HorizontalAlignment="Left"
-                    Padding="24,13" Click="OnLaunchClick"/>
-            <TextBlock Text="EXISTING MODLETS (READ ONLY)" Foreground="#7FE5CE" FontWeight="Bold"
-                       Margin="0,10,0,0"/>
-            <TextBlock Text="Mods already in the game's install and default user data directory. Atmosphere will not modify them."
-                       Foreground="#BACBDA" TextWrapping="Wrap"/>
-            <Button Content="Refresh existing mods" HorizontalAlignment="Left" Click="OnRefreshGameModsClick"/>
-            <ListBox x:Name="GameModList" MinHeight="110" MaxHeight="210" Background="#192C42"/>
+    <!-- Sidebar navigation via accessible, keyboard-friendly Avalonia tabs -->
+    <TabControl x:Name="MainTabs" Grid.Row="1" TabStripPlacement="Left"
+                Background="Transparent" BorderThickness="0" Padding="0"
+                SelectedIndex="0" Margin="10,12,14,12">
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <PathIcon Width="20" Height="20" Data="M3 10 L12 3 L21 10 L21 21 L14 21 L14 15 L10 15 L10 21 L3 21 Z"/>
+            <TextBlock Text="Overview" VerticalAlignment="Center" FontWeight="SemiBold"/>
           </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-      <TabItem Header="Profiles">
-        <ScrollViewer>
-          <Grid Margin="16" ColumnDefinitions="330,*" ColumnSpacing="22">
-            <StackPanel Grid.Column="0" Spacing="12">
-              <TextBlock Text="MY PROFILES" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-              <TextBlock Text="Separate mods and saves for each setup." Foreground="#BBCBDD"/>
-              <ListBox x:Name="ProfileList" Height="265" Background="#192C42"
-                       SelectionChanged="OnProfileSelectionChanged"/>
-              <TextBox x:Name="NewProfileNameTextBox" Watermark="New profile name"/>
-              <Button Content="Create profile" HorizontalAlignment="Stretch" Click="OnCreateProfileClick"/>
-              <TextBlock Text="ARCHIVED PROFILES" Foreground="#7FE5CE" FontWeight="Bold"
-                         Margin="0,9,0,0"/>
-              <ListBox x:Name="ArchivedProfilesList" Height="105" Background="#192C42"/>
-              <Button Content="Restore selected archive" HorizontalAlignment="Stretch"
-                      Click="OnRestoreProfileClick"/>
-              <Button Content="Permanently delete selected archive" HorizontalAlignment="Stretch"
-                      Click="OnDeleteArchivedProfileClick"/>
+        </TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="22" Margin="16,8,12,28">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="COMMAND CENTER"/>
+              <TextBlock Classes="page-title" Text="Welcome to Atmosphere"/>
+              <TextBlock Classes="muted"
+                         Text="A clearer way to organize your wasteland. Pick a game, curate mods, and launch on your terms."/>
             </StackPanel>
-
-            <StackPanel Grid.Column="1" Spacing="14">
-              <TextBlock Text="SELECTED PROFILE" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-              <TextBlock x:Name="SelectedProfileText" Text="Select or create a profile."
-                         Foreground="#DAE4EE" TextWrapping="Wrap"/>
-              <TextBox x:Name="RenameProfileTextBox" Watermark="Rename selected profile"/>
-              <Button Content="Save profile name" HorizontalAlignment="Left" Click="OnRenameProfileClick"/>
-              <TextBox x:Name="VersionNoteTextBox" Watermark="Optional game version note (e.g. V2.0)"/>
-              <Button Content="Use current game folder for this profile" HorizontalAlignment="Left"
-                      Click="OnSetProfileGameClick"/>
-              <Button Content="Create full isolated game copy (uses disk space)" HorizontalAlignment="Left"
-                      Click="OnCreateGameCopyClick"/>
-              <Button x:Name="CancelGameCopyButton" Content="Cancel game copying" IsEnabled="False"
-                      HorizontalAlignment="Left" Click="OnCancelGameCopyClick"/>
-              <TextBlock x:Name="GameCopyStatusText" Text="No copy operation running."
-                         Foreground="#AABED1" TextWrapping="Wrap"/>
-              <CheckBox x:Name="NoEacCheckBox" Content="Launch without EAC (required for code/DLL mods)"
-                        Foreground="#E3EAF1"/>
-              <Button Content="Launch selected profile" Background="#278471" Foreground="White"
-                      Padding="18,12" FontWeight="Bold" HorizontalAlignment="Left"
-                      Click="OnLaunchProfileClick"/>
-              <TextBlock Text="Game-root Mods may also load alongside profile mods. Use a clean game installation to avoid mixing mods."
-                         Foreground="#D3B78E" TextWrapping="Wrap"/>
-              <Button Content="Archive selected profile (keep all data)" HorizontalAlignment="Left"
-                      Click="OnArchiveProfileClick"/>
-              <Border Background="#192C42" CornerRadius="10" Padding="16" Margin="0,8,0,0">
-                <StackPanel Spacing="12">
-                  <TextBlock Text="STORAGE AND CLEANUP" FontWeight="Bold" FontSize="15" Foreground="#7FE5CE"/>
-                  <TextBlock x:Name="ProfileStorageText" Text="Select a profile and refresh storage usage."
-                             Foreground="#B7C9DA" TextWrapping="Wrap"/>
+            <Border CornerRadius="19" Padding="26" BorderBrush="#4D5793" BorderThickness="1">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#292D61" Offset="0"/>
+                  <GradientStop Color="#192849" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="22">
+                <StackPanel Grid.Column="0" Spacing="13">
+                  <TextBlock Text="READY FOR YOUR NEXT RUN" FontSize="11" FontWeight="Bold"
+                             Foreground="#A5ADF5"/>
+                  <TextBlock Text="7 Days to Die" FontSize="31" FontWeight="Bold" Foreground="#FFFFFF"/>
+                  <TextBlock x:Name="OverviewGameStatusText" Text="Checking game installation..."
+                             Foreground="#D7DEF3" TextWrapping="Wrap"/>
+                  <TextBlock x:Name="OverviewGamePathText" Text="Game path not selected"
+                             Foreground="#9CB0D3" TextWrapping="Wrap" FontSize="12" MaxWidth="500"/>
                   <WrapPanel>
-                    <Button Content="Refresh storage usage" Margin="0,0,8,8"
-                            Click="OnRefreshStorageClick"/>
-                    <Button Content="Open profile folder" Margin="0,0,8,8"
-                            Click="OnOpenProfileFolderClick"/>
+                    <Button Classes="primary" Content="Play vanilla" Margin="0,0,10,10"
+                            Click="OnLaunchClick"/>
+                    <Button Classes="subtle" Content="Manage game" Margin="0,0,10,10"
+                            Click="OnNavigateGameClick"/>
                   </WrapPanel>
-                  <Button Content="Delete only this profile's GameCopy" HorizontalAlignment="Left"
-                          Click="OnDeleteGameCopyClick"/>
-                  <Button Content="Permanently clear this profile's backups" HorizontalAlignment="Left"
-                          Click="OnClearProfileBackupsClick"/>
-                  <Button Content="Permanently delete this profile and its data" HorizontalAlignment="Left"
-                          Click="OnDeleteProfileClick"/>
-                  <TextBlock Text="Permanent deletion also removes saves and mods. Your external Steam game installation will never be deleted."
-                             Foreground="#E1B7A2" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Image Grid.Column="1" Source="/Assets/icon.png" Width="152" Height="152"
+                       Stretch="Uniform" VerticalAlignment="Center"/>
+              </Grid>
+            </Border>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+              <Border Grid.Column="0" Classes="panel" Padding="20">
+                <StackPanel Spacing="9">
+                  <TextBlock Classes="eyebrow" Text="PROFILES"/>
+                  <TextBlock x:Name="OverviewProfileCountText" Text="0" FontSize="29"
+                             FontWeight="Bold" Foreground="#F4F6FF"/>
+                  <TextBlock Classes="muted" Text="Your personalized setups" FontSize="12"/>
                 </StackPanel>
               </Border>
-            </StackPanel>
-          </Grid>
-        </ScrollViewer>
-      </TabItem>
-
-      <TabItem Header="My Mods">
-        <ScrollViewer>
-          <StackPanel Margin="16" Spacing="14">
-            <TextBlock Text="PROFILE MOD LIBRARY" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-            <TextBlock x:Name="ModProfileLabel" Text="Select a profile in the Profiles tab first."
-                       Foreground="#CAD7E4"/>
-            <TextBlock Text="Install multiple modlets from one ZIP, or select several ZIP files at once. Supports ZIPs up to 16 GiB (up to 64 GiB unpacked) with disk-space checks. Mods stay in your profile."
-                       TextWrapping="Wrap" Foreground="#B6C5D5"/>
-            <ListBox x:Name="ModsList" Height="275" Background="#192C42"
-                     SelectionChanged="OnModSelectionChanged"/>
-            <TextBlock x:Name="ModDetailsText" Foreground="#C8D6E2" TextWrapping="Wrap"
-                       Text="Choose an installed mod to see details."/>
-            <CheckBox x:Name="ReplaceExistingCheckBox" Content="Replace existing mods on install (back up old copies)"
-                      Foreground="#E1E9F1"/>
-            <WrapPanel>
-              <Button Content="Install mod ZIP(s)..." Margin="0,0,10,10" Padding="16,9" Click="OnInstallZipClick"/>
-              <Button Content="Enable selected" Margin="0,0,10,10" Padding="16,9" Click="OnEnableModClick"/>
-              <Button Content="Disable selected" Margin="0,0,10,10" Padding="16,9" Click="OnDisableModClick"/>
-              <Button Content="Archive selected mod" Margin="0,0,10,10" Padding="16,9" Click="OnArchiveModClick"/>
-              <Button Content="Refresh mods" Margin="0,0,10,10" Padding="16,9" Click="OnRefreshModsClick"/>
-              <Button Content="Find selected mod's source" Margin="0,0,10,10" Padding="16,9"
-                      Click="OnFindModSourceClick"/>
-            </WrapPanel>
-            <TextBlock Text="Archive never permanently deletes a mod: it is moved into the profile's Backups/Removed directory."
-                       Foreground="#A9BBD0" TextWrapping="Wrap"/>
+              <Border Grid.Column="1" Classes="panel" Padding="20">
+                <StackPanel Spacing="9">
+                  <TextBlock Classes="eyebrow" Text="SELECTED PROFILE MODS"/>
+                  <TextBlock x:Name="OverviewModCountText" Text="0" FontSize="29"
+                             FontWeight="Bold" Foreground="#F4F6FF"/>
+                  <TextBlock Classes="muted" Text="Enabled and disabled" FontSize="12"/>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="2" Classes="panel" Padding="20">
+                <StackPanel Spacing="9">
+                  <TextBlock Classes="eyebrow" Text="CURRENT PROFILE"/>
+                  <TextBlock x:Name="OverviewSelectedProfileText" Text="None" FontSize="18"
+                             FontWeight="SemiBold" Foreground="#F4F6FF" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Classes="muted" Text="Switch in Profiles" FontSize="12"/>
+                </StackPanel>
+              </Border>
+            </Grid>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+              <Border Grid.Column="0" Classes="panel" Padding="22">
+                <StackPanel Spacing="14">
+                  <TextBlock Classes="section-title" Text="Quick actions"/>
+                  <Button Content="Create or manage profiles" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Left" Click="OnNavigateProfilesClick"/>
+                  <Button Content="Browse installed modlets" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Left" Click="OnNavigateModsClick"/>
+                  <Button Content="Discover releases on GitHub" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Left" Click="OnNavigateOnlineClick"/>
+                  <Button Classes="subtle" Content="Refresh dashboard" HorizontalAlignment="Stretch"
+                          Click="OnRefreshOverviewClick"/>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="1" Classes="panel" Padding="22">
+                <StackPanel Spacing="12">
+                  <TextBlock Classes="section-title" Text="How it works"/>
+                  <TextBlock Text="01   Locate your game in the Game section"
+                             Foreground="#CAD6EB" TextWrapping="Wrap"/>
+                  <TextBlock Text="02   Create a profile and install your mod ZIPs"
+                             Foreground="#CAD6EB" TextWrapping="Wrap"/>
+                  <TextBlock Text="03   Launch the profile you want to play"
+                             Foreground="#CAD6EB" TextWrapping="Wrap"/>
+                  <Border Classes="soft-panel" Padding="13" Margin="0,7,0,0">
+                    <TextBlock Text="Modded profiles keep their user data separate. Game-root mods may still load; use a clean install for isolation."
+                               Foreground="#ACBBD1" FontSize="12" TextWrapping="Wrap"/>
+                  </Border>
+                </StackPanel>
+              </Border>
+            </Grid>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header="Online">
-        <ScrollViewer>
-          <StackPanel Margin="16" Spacing="14">
-            <TextBlock Text="SEARCH PUBLIC MOD REPOSITORIES" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-            <TextBlock Text="Search public GitHub repositories. Results are unverified and not a curated mod marketplace."
-                       TextWrapping="Wrap" Foreground="#B9CADB"/>
-            <TextBox x:Name="CatalogSearchTextBox" Watermark="Search topic, e.g. vehicles or UI"/>
-            <Button Content="Search GitHub mod repositories" HorizontalAlignment="Left"
-                    Click="OnCatalogSearchClick"/>
-            <ListBox x:Name="CatalogResultsList" Height="145" Background="#192C42"/>
-            <Button Content="Use selected repository" HorizontalAlignment="Left"
-                    Click="OnUseCatalogResultClick"/>
-            <TextBlock Text="GITHUB RELEASES" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
-            <TextBlock Text="Enter a trusted mod author's GitHub repository. Atmosphere reads its latest release only when you request it."
-                       TextWrapping="Wrap" Foreground="#B9CADB"/>
-            <TextBox x:Name="GitHubUrlTextBox" Watermark="https://github.com/owner/repository" MinHeight="42"/>
-            <Button Content="Check latest release" HorizontalAlignment="Left" Padding="16,10"
-                    Click="OnCheckReleaseClick"/>
-            <TextBlock x:Name="ReleaseInfoText" Text="No release selected." TextWrapping="Wrap"
-                       Foreground="#D2DFEC"/>
-            <ListBox x:Name="ReleaseAssetsList" Height="175" Background="#192C42"
-                     SelectionChanged="OnReleaseAssetSelectionChanged"/>
-            <TextBlock x:Name="SelectedAssetText" Text="Select a ZIP asset to install into the selected profile."
-                       Foreground="#BDD0E0" TextWrapping="Wrap"/>
-            <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100" Value="0"/>
-            <WrapPanel>
-              <Button x:Name="DownloadInstallButton" Content="Download and install selected ZIP"
-                      Margin="0,0,10,10" Background="#278471" Foreground="White" Padding="16,10"
-                      Click="OnDownloadInstallClick"/>
-              <Button x:Name="CancelDownloadButton" Content="Cancel download" IsEnabled="False"
-                      Margin="0,0,10,10" Padding="16,10" Click="OnCancelDownloadClick"/>
-            </WrapPanel>
-            <TextBlock x:Name="OnlineStatusText" Text="No downloads running."
-                       TextWrapping="Wrap" Foreground="#BDD0E0"/>
-            <TextBlock Text="Use the Replace existing checkbox on the My Mods tab to back up and update an installed mod. ZIP downloads are size limited and hashed with SHA-256, but not publisher-signature verified."
-                       Foreground="#C4B898" TextWrapping="Wrap"/>
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <PathIcon Width="20" Height="20" Data="M4 5 L20 5 L22 9 L22 19 L2 19 L2 9 Z M7 12 L10 12 M8.5 10.5 L8.5 13.5 M16 11 L17 11 L17 13 L16 13 Z"/>
+            <TextBlock Text="Game" VerticalAlignment="Center" FontWeight="SemiBold"/>
+          </StackPanel>
+        </TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="20" Margin="16,8,12,28">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="GAME SETUP"/>
+              <TextBlock Classes="page-title" Text="Your game installation"/>
+              <TextBlock Classes="muted"
+                         Text="Connect a Steam installation or a separate copy. Atmosphere never writes modlets to the original game folder."/>
+            </StackPanel>
+            <Border Classes="panel" Padding="24">
+              <StackPanel Spacing="16">
+                <TextBlock Classes="section-title" Text="Installation directory"/>
+                <TextBlock Classes="muted" Text="Choose the folder containing the 7 Days to Die executable."/>
+                <TextBox x:Name="GamePathTextBox" Watermark="Path to your 7 Days to Die folder"
+                         TextChanged="OnGamePathChanged"/>
+                <WrapPanel>
+                  <Button Classes="primary" Content="Browse folder" Margin="0,0,10,10"
+                          Click="OnBrowseClick"/>
+                  <Button Content="Auto-detect" Margin="0,0,10,10" Click="OnDetectClick"/>
+                  <Button Content="Save location" Margin="0,0,10,10" Click="OnSaveClick"/>
+                  <Button x:Name="OpenFolderButton" Content="Open folder" Margin="0,0,10,10"
+                          Click="OnOpenFolderClick"/>
+                </WrapPanel>
+                <Border Classes="soft-panel" Padding="16">
+                  <StackPanel Spacing="6">
+                    <TextBlock x:Name="GameStatusText" FontWeight="SemiBold" Foreground="#DFFAEF"/>
+                    <TextBlock x:Name="GameDetailsText" Foreground="#B3C4DE" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+                <Button x:Name="LaunchButton" Classes="primary" Content="Launch vanilla with Steam"
+                        HorizontalAlignment="Left" Click="OnLaunchClick"/>
+              </StackPanel>
+            </Border>
+            <Border Classes="panel" Padding="24">
+              <StackPanel Spacing="13">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <TextBlock Classes="section-title" Text="Existing game modlets"/>
+                  <Border Background="#273A43" CornerRadius="12" Padding="9,3">
+                    <TextBlock Text="READ ONLY" Foreground="#A6EAD1" FontSize="10" FontWeight="Bold"/>
+                  </Border>
+                </StackPanel>
+                <TextBlock Classes="muted" Text="Inspect modlets already in your game installation or default user-data folder."/>
+                <Button Classes="subtle" Content="Refresh inventory" HorizontalAlignment="Left"
+                        Click="OnRefreshGameModsClick"/>
+                <ListBox x:Name="GameModList" MinHeight="170" MaxHeight="300"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <PathIcon Width="20" Height="20" Data="M12 3 A4 4 0 1 1 12 11 A4 4 0 1 1 12 3 Z M3 21 L3 17 C3 13 21 13 21 17 L21 21 Z"/>
+            <TextBlock Text="Profiles" VerticalAlignment="Center" FontWeight="SemiBold"/>
+          </StackPanel>
+        </TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="20" Margin="16,8,12,28">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="PLAY YOUR WAY"/>
+              <TextBlock Classes="page-title" Text="Profiles and game copies"/>
+              <TextBlock Classes="muted"
+                         Text="Keep your mod sets and saves organized, or create an isolated game copy for an overhaul."/>
+            </StackPanel>
+            <Grid ColumnDefinitions="300,*" ColumnSpacing="16">
+              <StackPanel Grid.Column="0" Spacing="16">
+                <Border Classes="panel" Padding="18">
+                  <StackPanel Spacing="12">
+                    <TextBlock Classes="section-title" Text="My profiles"/>
+                    <ListBox x:Name="ProfileList" Height="220"
+                             SelectionChanged="OnProfileSelectionChanged"/>
+                    <TextBox x:Name="NewProfileNameTextBox" Watermark="Name a new profile"/>
+                    <Button Classes="primary" Content="Create profile" Click="OnCreateProfileClick"/>
+                  </StackPanel>
+                </Border>
+                <Border Classes="panel" Padding="18">
+                  <StackPanel Spacing="12">
+                    <TextBlock Classes="section-title" Text="Archived profiles"/>
+                    <TextBlock Classes="muted" FontSize="12" Text="Restore an old setup or permanently remove its data."/>
+                    <ListBox x:Name="ArchivedProfilesList" Height="116"/>
+                    <Button Classes="subtle" Content="Restore selected" Click="OnRestoreProfileClick"/>
+                    <Button Classes="danger" Content="Delete selected archive"
+                            Click="OnDeleteArchivedProfileClick"/>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="16">
+                <Border Classes="panel" Padding="22">
+                  <StackPanel Spacing="13">
+                    <TextBlock Classes="section-title" Text="Active profile"/>
+                    <TextBlock x:Name="SelectedProfileText" Text="Select or create a profile."
+                               Foreground="#C9D6E9" TextWrapping="Wrap"/>
+                    <TextBox x:Name="RenameProfileTextBox" Watermark="Rename profile"/>
+                    <Button Classes="subtle" Content="Save name" HorizontalAlignment="Left"
+                            Click="OnRenameProfileClick"/>
+                    <TextBox x:Name="VersionNoteTextBox" Watermark="Version note (e.g. V2.0)"/>
+                    <Button Content="Use selected game folder" HorizontalAlignment="Left"
+                            Click="OnSetProfileGameClick"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="primary" Content="Launch this profile"
+                              Click="OnLaunchProfileClick"/>
+                      <Button Classes="subtle" Content="Archive profile"
+                              Click="OnArchiveProfileClick"/>
+                    </StackPanel>
+                    <CheckBox x:Name="NoEacCheckBox"
+                              Content="Launch without EAC (required for DLL/code mods)"/>
+                    <TextBlock Classes="muted" FontSize="12"
+                               Text="Mods inside the game's own Mods folder may still load. A separate game copy is recommended for big overhauls."/>
+                  </StackPanel>
+                </Border>
+                <Border Classes="panel" Padding="22">
+                  <StackPanel Spacing="12">
+                    <TextBlock Classes="section-title" Text="Game copy"/>
+                    <TextBlock Classes="muted"
+                               Text="Make a self-contained copy for overhauls. This uses additional disk space but leaves Steam files untouched."/>
+                    <WrapPanel>
+                      <Button Content="Create isolated game copy" Margin="0,0,10,8"
+                              Click="OnCreateGameCopyClick"/>
+                      <Button x:Name="CancelGameCopyButton" Classes="subtle"
+                              Content="Cancel copy" IsEnabled="False"
+                              Click="OnCancelGameCopyClick"/>
+                    </WrapPanel>
+                    <TextBlock x:Name="GameCopyStatusText" Classes="muted"
+                               Text="No copy operation running."/>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Grid>
+            <Border Classes="panel" Padding="22">
+              <StackPanel Spacing="14">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="section-title" Text="Storage and cleanup"/>
+                    <TextBlock Classes="muted" Text="Inspect disk usage and remove Atmosphere-managed files."/>
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="subtle" Content="Refresh storage"
+                          Click="OnRefreshStorageClick"/>
+                </Grid>
+                <TextBlock x:Name="ProfileStorageText" Classes="muted"
+                           Text="Select a profile and refresh storage usage."/>
+                <WrapPanel>
+                  <Button Content="Open profile folder" Margin="0,0,10,10"
+                          Click="OnOpenProfileFolderClick"/>
+                  <Button Classes="subtle" Content="Delete owned GameCopy" Margin="0,0,10,10"
+                          Click="OnDeleteGameCopyClick"/>
+                  <Button Classes="subtle" Content="Clear backups" Margin="0,0,10,10"
+                          Click="OnClearProfileBackupsClick"/>
+                  <Button Classes="danger" Content="Permanently delete profile"
+                          Margin="0,0,10,10" Click="OnDeleteProfileClick"/>
+                </WrapPanel>
+                <Border Background="#3C2937" BorderBrush="#6C435B" BorderThickness="1"
+                        CornerRadius="9" Padding="12">
+                  <TextBlock Text="Permanent deletion removes saves, mods and owned game copies. Confirmation is required; external Steam installations are never deleted."
+                             Foreground="#F2C8D3" FontSize="12" TextWrapping="Wrap"/>
+                </Border>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <PathIcon Width="20" Height="20" Data="M12 2 L22 7 L12 12 L2 7 Z M2 12 L12 17 L22 12 L22 17 L12 22 L2 17 Z"/>
+            <TextBlock Text="My Mods" VerticalAlignment="Center" FontWeight="SemiBold"/>
+          </StackPanel>
+        </TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="20" Margin="16,8,12,28">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="MOD COLLECTION"/>
+              <TextBlock Classes="page-title" Text="Your mod library"/>
+              <TextBlock Classes="muted"
+                         Text="Install entire modpacks or individual modlets, and enable or disable them per profile."/>
+            </StackPanel>
+            <Border Classes="panel" Padding="22">
+              <StackPanel Spacing="15">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="5">
+                    <TextBlock Classes="section-title" Text="Installed modlets"/>
+                    <TextBlock x:Name="ModProfileLabel" Foreground="#AAB9E4"
+                               Text="Select a profile to manage modlets."/>
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="subtle" Content="Refresh"
+                          Click="OnRefreshModsClick"/>
+                </Grid>
+                <TextBlock Classes="muted" FontSize="12"
+                           Text="Import multiple ZIPs at once or a ZIP containing several modlets. Limits: 16 GiB ZIP, 64 GiB expanded. Original game files stay untouched."/>
+                <ListBox x:Name="ModsList" Height="275"
+                         SelectionChanged="OnModSelectionChanged"/>
+                <Border Classes="soft-panel" Padding="14">
+                  <TextBlock x:Name="ModDetailsText" Foreground="#CED9EA" TextWrapping="Wrap"
+                             Text="Select a mod to see details and compatibility warnings."/>
+                </Border>
+                <CheckBox x:Name="ReplaceExistingCheckBox"
+                          Content="Back up and replace existing mods on install"/>
+                <WrapPanel>
+                  <Button Classes="primary" Content="Install ZIP modpack(s)"
+                          Margin="0,0,10,10" Click="OnInstallZipClick"/>
+                  <Button Content="Enable" Margin="0,0,10,10" Click="OnEnableModClick"/>
+                  <Button Content="Disable" Margin="0,0,10,10" Click="OnDisableModClick"/>
+                  <Button Classes="subtle" Content="Archive mod"
+                          Margin="0,0,10,10" Click="OnArchiveModClick"/>
+                  <Button Classes="subtle" Content="Find source"
+                          Margin="0,0,10,10" Click="OnFindModSourceClick"/>
+                </WrapPanel>
+                <TextBlock Classes="muted" FontSize="12"
+                           Text="Archived modlets remain in Backups/Removed until you explicitly clear backups."/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <PathIcon Width="20" Height="20" Data="M12 2 A10 10 0 1 1 12 22 A10 10 0 1 1 12 2 Z M2 12 L22 12 M12 2 C6 8 6 16 12 22 M12 2 C18 8 18 16 12 22"/>
+            <TextBlock Text="Discover" VerticalAlignment="Center" FontWeight="SemiBold"/>
+          </StackPanel>
+        </TabItem.Header>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="20" Margin="16,8,12,28">
+            <StackPanel Spacing="5">
+              <TextBlock Classes="eyebrow" Text="FIND YOUR NEXT MOD"/>
+              <TextBlock Classes="page-title" Text="Browse and install"/>
+              <TextBlock Classes="muted"
+                         Text="Find community GitHub repositories, inspect official release assets, and install directly to the selected profile."/>
+            </StackPanel>
+            <Border Classes="panel" Padding="23">
+              <StackPanel Spacing="13">
+                <TextBlock Classes="section-title" Text="Search GitHub repositories"/>
+                <TextBlock Classes="muted" Text="Search results are public and unverified. Check the author and game-version compatibility before installing."/>
+                <TextBox x:Name="CatalogSearchTextBox" Watermark="Try: vehicles, quests, UI, inventory..."/>
+                <WrapPanel>
+                  <Button Classes="primary" Content="Search repositories"
+                          Margin="0,0,10,10" Click="OnCatalogSearchClick"/>
+                  <Button Classes="subtle" Content="Use selected result"
+                          Margin="0,0,10,10" Click="OnUseCatalogResultClick"/>
+                </WrapPanel>
+                <ListBox x:Name="CatalogResultsList" Height="168"/>
+              </StackPanel>
+            </Border>
+            <Border Classes="panel" Padding="23">
+              <StackPanel Spacing="15">
+                <TextBlock Classes="section-title" Text="GitHub Releases"/>
+                <TextBlock Classes="muted" Text="Choose a trusted repository, then inspect its latest ZIP release assets."/>
+                <TextBox x:Name="GitHubUrlTextBox" Watermark="https://github.com/owner/repository"/>
+                <Button Classes="subtle" Content="Check latest release"
+                        HorizontalAlignment="Left" Click="OnCheckReleaseClick"/>
+                <Border Classes="soft-panel" Padding="13">
+                  <TextBlock x:Name="ReleaseInfoText" Foreground="#C9D7EB"
+                             TextWrapping="Wrap" Text="No release selected."/>
+                </Border>
+                <TextBlock Classes="eyebrow" Text="AVAILABLE ZIP ASSETS"/>
+                <ListBox x:Name="ReleaseAssetsList" Height="176"
+                         SelectionChanged="OnReleaseAssetSelectionChanged"/>
+                <TextBlock x:Name="SelectedAssetText" Classes="muted"
+                           Text="Select a ZIP asset to install into the selected profile."/>
+                <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100"
+                             Height="7" Value="0"/>
+                <WrapPanel>
+                  <Button x:Name="DownloadInstallButton" Classes="primary"
+                          Content="Download and install" Margin="0,0,10,10"
+                          Click="OnDownloadInstallClick"/>
+                  <Button x:Name="CancelDownloadButton" Classes="subtle"
+                          Content="Cancel download" IsEnabled="False"
+                          Margin="0,0,10,10" Click="OnCancelDownloadClick"/>
+                </WrapPanel>
+                <TextBlock x:Name="OnlineStatusText" Classes="muted"
+                           Text="No downloads running."/>
+                <TextBlock Classes="muted" FontSize="12"
+                           Text="A SHA-256 hash is recorded for downloads, but it is not a publisher signature. Only install code mods from trusted sources."/>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
     </TabControl>
-  </DockPanel>
+
+    <!-- Compact, persistent activity/status footer -->
+    <Border Grid.Row="2" Background="#10192B" BorderBrush="#28334A"
+            BorderThickness="0,1,0,0" Padding="18,10">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#7DDCB8" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" x:Name="GlobalStatusText" Text="Ready."
+                   Foreground="#DEE7F7" TextWrapping="Wrap" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="2" Text="ATMOSPHERE • COMMUNITY PREVIEW"
+                   FontSize="10" Foreground="#8393AE" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+  </Grid>
 </Window>

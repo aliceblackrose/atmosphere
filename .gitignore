@@ -16,6 +16,7 @@
 # Packaging
 artifacts/
 publish/
+src/Atmosphere/Assets/Atmosphere.ico
 
 # OS files
 .DS_Store

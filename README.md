@@ -6,6 +6,8 @@ It manages modlets in independent profile workspaces, not in your Steam installa
 
 ## Features
 
+- Modern dark Fluent desktop interface with a live Overview dashboard, sidebar navigation, responsive cards, accessible control states, and the original Atmosphere artwork displayed as the window icon
+- Windows desktop executable icon generated from the repository's `icon.png` for packaged builds
 - Steam game detection, alternate library paths, custom game folders, vanilla launching
 - Read-only inventory of existing game/user mods with modern `ModInfo.xml` validation
 - Named profiles with separately stored mods, saves, and generated worlds
@@ -33,6 +35,20 @@ dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj
 ```
 
 GitHub Actions artifacts provide self-contained platform-specific preview executables on working feature branches. Download from the **Package desktop preview** workflow's artifact list. Windows is the primary supported target until manual platform testing.
+
+## Desktop icon and branding
+
+The original `icon.png` in the repository root is embedded in the app and displayed in the header, Windows title bar, and task switcher via Avalonia's window icon. Release packaging additionally generates `src/Atmosphere/Assets/Atmosphere.ico` for Windows executable metadata (Explorer/taskbar icon), using the same source image.
+
+For a local Windows release build, install [Pillow](https://pillow.readthedocs.io/) and generate the icon before publishing:
+
+```bash
+python -m pip install Pillow
+python tools/make_icon.py
+dotnet publish src/Atmosphere/Atmosphere.csproj -c Release -r win-x64 --self-contained true
+```
+
+Running `dotnet run` still shows the in-app/window PNG icon even if Pillow isn't installed.
 
 ## Documentation
 
