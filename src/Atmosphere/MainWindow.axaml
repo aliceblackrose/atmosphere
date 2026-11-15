@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Atmosphere.MainWindow"
+        Title="Atmosphere — 7 Days to Die"
+        Width="960"
+        Height="680"
+        MinWidth="700"
+        MinHeight="560"
+        Background="#0C1320">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="36" Spacing="22">
+      <Border Background="#16263C" CornerRadius="18" Padding="28">
+        <StackPanel Spacing="7">
+          <TextBlock Text="A T M O S P H E R E" FontSize="14" FontWeight="Bold" Foreground="#7FE5CE" />
+          <TextBlock Text="Your wasteland. Your rules." FontSize="30" FontWeight="Bold" Foreground="#FFFFFF" />
+          <TextBlock Text="7 Days to Die launcher  ·  Phase 1 desktop foundation" FontSize="15" Foreground="#B8C9D8" />
+        </StackPanel>
+      </Border>
+
+      <Grid ColumnDefinitions="*,260" ColumnSpacing="20">
+        <Border Grid.Column="0" Background="#162036" CornerRadius="14" Padding="24">
+          <StackPanel Spacing="16">
+            <TextBlock Text="GAME INSTALLATION" FontSize="14" FontWeight="Bold" Foreground="#7FE5CE" />
+            <TextBlock Text="Locate your installed Steam copy of 7 Days to Die." Foreground="#BDCCDC" TextWrapping="Wrap" />
+            <TextBox x:Name="GamePathTextBox"
+                     Watermark="Path to your 7 Days to Die directory"
+                     MinHeight="38"
+                     TextChanged="OnGamePathChanged" />
+            <WrapPanel Orientation="Horizontal" ItemWidth="118" ItemHeight="42">
+              <Button Content="Browse..." Width="109" Click="OnBrowseClick" />
+              <Button Content="Detect" Width="109" Click="OnDetectClick" />
+              <Button Content="Save path" Width="109" Click="OnSaveClick" />
+            </WrapPanel>
+            <Border Background="#21314B" CornerRadius="8" Padding="14">
+              <StackPanel Spacing="7">
+                <TextBlock x:Name="GameStatusText" Text="Checking for the game..." FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" />
+                <TextBlock x:Name="GameDetailsText" Foreground="#C2D1DE" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Background="#162036" CornerRadius="14" Padding="24">
+          <StackPanel Spacing="14">
+            <TextBlock Text="PLAY" FontSize="14" FontWeight="Bold" Foreground="#7FE5CE" />
+            <TextBlock Text="Vanilla game" FontSize="22" FontWeight="SemiBold" Foreground="White" />
+            <TextBlock Text="Steam handles the standard launch. Modded profile launching comes in a later phase."
+                       Foreground="#BDCCDC" TextWrapping="Wrap" />
+            <Button x:Name="LaunchButton" Content="Launch via Steam" Click="OnLaunchClick"
+                    Background="#287C71" Foreground="White" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" MinHeight="46" />
+            <Button x:Name="OpenFolderButton" Content="Open game folder" Click="OnOpenFolderClick"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="40" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Border Background="#162036" CornerRadius="14" Padding="24">
+        <StackPanel Spacing="9">
+          <TextBlock Text="COMING NEXT" FontSize="14" FontWeight="Bold" Foreground="#7FE5CE" />
+          <TextBlock Text="Profiles  •  ZIP mod installation  •  Update checks  •  Mod catalog  •  Isolated overhauls"
+                     Foreground="#D7E3EE" TextWrapping="Wrap" />
+          <TextBlock Text="Phase 1 only detects your installation, saves its location, and starts vanilla through Steam. Nothing in the game's files is changed."
+                     Foreground="#AFC0D2" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</Window>
