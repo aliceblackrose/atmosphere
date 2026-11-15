@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using Avalonia;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Atmosphere.Models;
 using Atmosphere.Services;
 using Avalonia.Controls;
@@ -13,6 +16,7 @@ public partial class MainWindow : Window
     private readonly GameLocator _locator = new();
     private readonly LauncherSettingsStore _settingsStore = new();
     private readonly ProfileStore _profiles = new();
+    private readonly ProfileStorageService _storage;
     private readonly GitHubReleaseService _github = new();
     private readonly ModSourceStore _sources;
     private readonly ProfileModInstaller _installer;
@@ -20,7 +24,7 @@ public partial class MainWindow : Window
     private readonly LauncherSettings _settings;
 
     private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl, _catalogSearch;
-    private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText;
+    private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText, _profileStorageText;
     private readonly TextBlock _modProfileLabel, _modDetails, _releaseInfo, _selectedAsset, _onlineStatus;
     private readonly Button _vanillaButton, _openFolderButton, _downloadButton, _cancelButton;
     private readonly ListBox _profilesList, _archivedProfilesList, _modsList, _gameModsList, _assetsList, _catalogList;
@@ -55,6 +59,7 @@ public partial class MainWindow : Window
         _renameProfile = Find<TextBox>("RenameProfileTextBox");
         _versionNote = Find<TextBox>("VersionNoteTextBox");
         _selectedProfileText = Find<TextBlock>("SelectedProfileText");
+        _profileStorageText = Find<TextBlock>("ProfileStorageText");
         _noEac = Find<CheckBox>("NoEacCheckBox");
         _modsList = Find<ListBox>("ModsList");
         _gameModsList = Find<ListBox>("GameModList");
@@ -74,6 +79,7 @@ public partial class MainWindow : Window
         _gameCopyStatus = Find<TextBlock>("GameCopyStatusText");
         _cancelGameCopyButton = Find<Button>("CancelGameCopyButton");
 
+        _storage = new ProfileStorageService(_profiles);
         _installer = new ProfileModInstaller(_profiles);
         _sources = new ModSourceStore(_profiles);
         _profileLauncher = new ProfileGameLauncher(_profiles);
@@ -239,6 +245,9 @@ public partial class MainWindow : Window
         _modProfileLabel.Text = p is null ? "No selected profile." : "Selected: " + p.Name;
         _renameProfile.Text = p?.Name;
         _versionNote.Text = p?.GameVersionNote;
+        _profileStorageText.Text = p is null
+            ? "Select a profile first."
+            : "Select Refresh storage usage to measure this profile's space.";
         RefreshMods();
     }
 
@@ -380,6 +389,202 @@ public partial class MainWindow : Window
             Report("Archived " + p.Name + ". No profile files were deleted.");
         }
         catch (Exception ex) { Error("Could not archive profile", ex); }
+    }
+
+    private static string DisplayBytes(long bytes)
+    {
+        double value = bytes;
+        var unit = "B";
+        foreach (var next in new[] { "KiB", "MiB", "GiB", "TiB" })
+        {
+            if (value < 1024) break;
+            value /= 1024;
+            unit = next;
+        }
+        return value.ToString("F1") + " " + unit;
+    }
+
+    private async Task<bool> ConfirmPermanentDeleteAsync(string title, string profileName,
+        string consequences)
+    {
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 560,
+            Height = 315,
+            MinWidth = 450,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var explanation = new TextBlock
+        {
+            Text = consequences + "\n\nType the profile name exactly to confirm: " + profileName,
+            TextWrapping = TextWrapping.Wrap
+        };
+        var typed = new TextBox { Watermark = "Type the profile name here" };
+        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
+        var confirm = new Button
+        {
+            Content = "Delete permanently",
+            MinWidth = 150,
+            Background = Brushes.IndianRed,
+            Foreground = Brushes.White,
+            IsEnabled = false
+        };
+        typed.TextChanged += (_, _) =>
+            confirm.IsEnabled = string.Equals(typed.Text, profileName, StringComparison.Ordinal);
+        cancel.Click += (_, _) => dialog.Close(false);
+        confirm.Click += (_, _) => dialog.Close(true);
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        actions.Children.Add(cancel);
+        actions.Children.Add(confirm);
+        var content = new StackPanel { Margin = new Thickness(22), Spacing = 14 };
+        content.Children.Add(new TextBlock
+        {
+            Text = title, FontSize = 20, FontWeight = FontWeight.Bold,
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(explanation);
+        content.Children.Add(typed);
+        content.Children.Add(actions);
+        dialog.Content = content;
+        return await dialog.ShowDialog<bool>(this);
+    }
+
+    private async void OnRefreshStorageClick(object? sender, RoutedEventArgs e)
+    {
+        var selected = SelectedProfile;
+        if (selected is null) { Report("Select a profile first."); return; }
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            _profileStorageText.Text = "Calculating profile storage usage...";
+            var usage = await Task.Run(() => _storage.GetUsage(selected.Id));
+            _profileStorageText.Text =
+                "Total: " + DisplayBytes(usage.TotalBytes) +
+                "\nGameCopy: " + DisplayBytes(usage.GameCopyBytes) +
+                "\nBackups: " + DisplayBytes(usage.BackupBytes) +
+                "\nOther (mods, saves, worlds): " +
+                DisplayBytes(usage.TotalBytes - usage.GameCopyBytes - usage.BackupBytes);
+        }
+        catch (Exception ex) { Error("Unable to measure storage", ex); }
+        finally { _busy = false; }
+    }
+
+    private void OnOpenProfileFolderClick(object? sender, RoutedEventArgs e)
+    {
+        var p = SelectedProfile;
+        if (p is null) { Report("Select a profile first."); return; }
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = _profiles.GetDirectory(p.Id), UseShellExecute = true
+            });
+        }
+        catch (Exception ex) { Error("Could not open profile folder", ex); }
+    }
+
+    private async void OnDeleteGameCopyClick(object? sender, RoutedEventArgs e)
+    {
+        var p = SelectedProfile;
+        if (p is null) { Report("Select a profile first."); return; }
+        if (_busy) return;
+        var path = Path.Combine(_profiles.GetDirectory(p.Id), "GameCopy");
+        if (!Directory.Exists(path)) { Report("This profile has no GameCopy to delete."); return; }
+        _busy = true;
+        try
+        {
+            var confirmed = await ConfirmPermanentDeleteAsync(
+                "Delete this profile's GameCopy?", p.Name,
+                "Permanently removes only the game copy stored at:\n" + path +
+                "\nProfile mods, saves, and backups stay. External Steam/game folders are not touched. Close the game first.");
+            if (!confirmed) return;
+            await Task.Run(() => _storage.DeleteGameCopy(p.Id));
+            RefreshProfiles(p.Id);
+            _profileStorageText.Text = "GameCopy deleted. Profile data retained. Refresh to see storage usage.";
+            Report("Removed the GameCopy owned by " + p.Name + "; original game files are untouched.");
+        }
+        catch (Exception ex) { Error("Could not delete GameCopy; check whether the game is running", ex); }
+        finally { _busy = false; }
+    }
+
+    private async void OnClearProfileBackupsClick(object? sender, RoutedEventArgs e)
+    {
+        var p = SelectedProfile;
+        if (p is null) { Report("Select a profile first."); return; }
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var confirmed = await ConfirmPermanentDeleteAsync(
+                "Clear this profile's backups?", p.Name,
+                "Permanently removes all Backups for this profile, including replaced and archived mods. " +
+                "Current mods, saves, GameCopy, and external game folders stay. This cannot be undone.");
+            if (!confirmed) return;
+            await Task.Run(() => _storage.ClearBackups(p.Id));
+            _profileStorageText.Text = "Backup cleanup complete. Refresh to see storage usage.";
+            Report("Removed stored backups for " + p.Name + ".");
+        }
+        catch (Exception ex) { Error("Could not clear profile backups", ex); }
+        finally { _busy = false; }
+    }
+
+    private async void OnDeleteProfileClick(object? sender, RoutedEventArgs e)
+    {
+        var p = SelectedProfile;
+        if (p is null) { Report("Select a profile first."); return; }
+        if (_busy) return;
+        _busy = true;
+        try
+        {
+            var confirmed = await ConfirmPermanentDeleteAsync(
+                "Permanently delete profile?", p.Name,
+                "Permanently removes the selected profile, its Mods, Saves, GeneratedWorlds, Backups, " +
+                "and any owned GameCopy. This action cannot be undone. Only Atmosphere's profile folder is deleted; " +
+                "your Steam game installation is never deleted. Close the game first.");
+            if (!confirmed) return;
+            await Task.Run(() => _storage.DeleteProfile(p.Id));
+            RefreshProfiles();
+            Report("Permanently deleted profile " + p.Name + " and its owned files.");
+        }
+        catch (Exception ex)
+        {
+            RefreshProfiles();
+            Error("Profile deletion failed. Any remaining files may be in Archived Profiles", ex);
+        }
+        finally { _busy = false; }
+    }
+
+    private async void OnDeleteArchivedProfileClick(object? sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        var index = _archivedProfilesList.SelectedIndex;
+        if (index < 0 || index >= _archivedRows.Count)
+        {
+            Report("Choose an archived profile first."); return;
+        }
+        var p = _archivedRows[index];
+        _busy = true;
+        try
+        {
+            var confirmed = await ConfirmPermanentDeleteAsync(
+                "Permanently delete archived profile?", p.Name,
+                "Permanently removes this archived profile's mods, saves, backups, and any owned GameCopy. " +
+                "This cannot be undone. No external game installation is deleted.");
+            if (!confirmed) return;
+            await Task.Run(() => _storage.DeleteArchivedProfile(p.Id));
+            RefreshProfiles();
+            Report("Permanently deleted archived profile " + p.Name + ".");
+        }
+        catch (Exception ex) { Error("Unable to delete archived profile", ex); }
+        finally { _busy = false; }
     }
 
     private void RefreshMods()

@@ -76,6 +76,8 @@
               <ListBox x:Name="ArchivedProfilesList" Height="105" Background="#192C42"/>
               <Button Content="Restore selected archive" HorizontalAlignment="Stretch"
                       Click="OnRestoreProfileClick"/>
+              <Button Content="Permanently delete selected archive" HorizontalAlignment="Stretch"
+                      Click="OnDeleteArchivedProfileClick"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="14">
@@ -102,6 +104,27 @@
                          Foreground="#D3B78E" TextWrapping="Wrap"/>
               <Button Content="Archive selected profile (keep all data)" HorizontalAlignment="Left"
                       Click="OnArchiveProfileClick"/>
+              <Border Background="#192C42" CornerRadius="10" Padding="16" Margin="0,8,0,0">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="STORAGE AND CLEANUP" FontWeight="Bold" FontSize="15" Foreground="#7FE5CE"/>
+                  <TextBlock x:Name="ProfileStorageText" Text="Select a profile and refresh storage usage."
+                             Foreground="#B7C9DA" TextWrapping="Wrap"/>
+                  <WrapPanel>
+                    <Button Content="Refresh storage usage" Margin="0,0,8,8"
+                            Click="OnRefreshStorageClick"/>
+                    <Button Content="Open profile folder" Margin="0,0,8,8"
+                            Click="OnOpenProfileFolderClick"/>
+                  </WrapPanel>
+                  <Button Content="Delete only this profile's GameCopy" HorizontalAlignment="Left"
+                          Click="OnDeleteGameCopyClick"/>
+                  <Button Content="Permanently clear this profile's backups" HorizontalAlignment="Left"
+                          Click="OnClearProfileBackupsClick"/>
+                  <Button Content="Permanently delete this profile and its data" HorizontalAlignment="Left"
+                          Click="OnDeleteProfileClick"/>
+                  <TextBlock Text="Permanent deletion also removes saves and mods. Your external Steam game installation will never be deleted."
+                             Foreground="#E1B7A2" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Border>
             </StackPanel>
           </Grid>
         </ScrollViewer>
