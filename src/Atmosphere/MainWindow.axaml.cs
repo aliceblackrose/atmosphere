@@ -439,23 +439,47 @@ public partial class MainWindow : Window
         {
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Choose modlet ZIP archive",
-                AllowMultiple = false,
+                Title = "Choose one or more mod ZIP archives",
+                AllowMultiple = true,
                 FileTypeFilter = new[] { new FilePickerFileType("ZIP archive") { Patterns = new[] { "*.zip" } } }
             });
             if (files.Count == 0) return;
-            var path = files[0].TryGetLocalPath();
-            if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("Please choose a local ZIP file.");
+
             var replace = _replace.IsChecked == true;
+            var installedNames = new List<string>();
+            var failures = new List<string>();
             _busy = true;
-            Report("Validating and installing mod ZIP...");
-            var installed = await Task.Run(() =>
-                _installer.InstallZip(p.Id, path, replace));
-            _sources.Forget(p.Id, installed.Select(x => x.Name));
+            foreach (var selected in files)
+            {
+                var path = selected.TryGetLocalPath();
+                var filename = path is null ? selected.Name : Path.GetFileName(path);
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(path))
+                        throw new InvalidOperationException("Choose a locally accessible ZIP file.");
+
+                    Report("Installing " + filename + " (" + (installedNames.Count + failures.Count + 1) +
+                        "/" + files.Count + ")...");
+                    // Each ZIP is validated and rolled back independently. Earlier successful
+                    // ZIPs are retained if a later archive fails; report every failure.
+                    var installed = await Task.Run(() => _installer.InstallZip(p.Id, path, replace));
+                    _sources.Forget(p.Id, installed.Select(x => x.Name));
+                    installedNames.AddRange(installed.Select(x => x.DisplayName));
+                }
+                catch (Exception ex)
+                {
+                    failures.Add(filename + ": " + ex.Message);
+                }
+            }
+
             RefreshMods();
-            Report("Installed " + string.Join(", ", installed.Select(m => m.DisplayName)) + " into " + p.Name + ".");
+            Report("Installed " + installedNames.Count + " mod(s) from " +
+                files.Count + " ZIP(s)." +
+                (failures.Count == 0 ? "" :
+                    " Failed ZIP(s): " + string.Join(" | ", failures.Take(3)) +
+                    (failures.Count > 3 ? $" (and {failures.Count - 3} more)" : "")));
         }
-        catch (Exception ex) { Error("ZIP installation failed; existing files were preserved where possible", ex); }
+        catch (Exception ex) { Error("Could not select mod ZIPs", ex); }
         finally { _busy = false; }
     }
 

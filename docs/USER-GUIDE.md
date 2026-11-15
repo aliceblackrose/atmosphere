@@ -3,7 +3,7 @@
 1. Install Steam and 7 Days to Die, then open Atmosphere.
 2. On **Game**, detect or browse to the game installation, and choose **Save game path**.
 3. On **Profiles**, create a named profile. To use a different 7 Days to Die game branch/copy, select that directory on the Game tab and click **Use current game folder for this profile**.
-4. On **My Mods**, choose **Install mod ZIP** and select a ZIP with current-format `ModInfo.xml` entries. Installations are staged and validated before being moved into the profile.
+4. On **My Mods**, choose **Install mod ZIP(s)** and select one or several ZIPs. A ZIP can contain many modlets, including folders nested under a pack's `Mods/` directory, as long as each modlet has a modern `ModInfo.xml`. Each ZIP is handled independently and reported if it fails. ZIP archives up to 16 GiB are supported; expanded data is limited to 64 GiB per ZIP, with 16 GiB per individual file and 50,000 entries. Check disk space before installing large packs.
 5. Disable or enable mods per profile; Archive moves them to backup, not Trash.
 6. Launch from **Profiles**. If a DLL mod is detected, select **Launch without EAC**. Keep Steam running.
 7. On **Online**, enter a GitHub repository URL, check its latest release, choose a ZIP, and install it into the selected profile. Check the author and game-version compatibility before installing.

@@ -113,7 +113,7 @@
             <TextBlock Text="PROFILE MOD LIBRARY" FontSize="17" FontWeight="Bold" Foreground="#7FE5CE"/>
             <TextBlock x:Name="ModProfileLabel" Text="Select a profile in the Profiles tab first."
                        Foreground="#CAD7E4"/>
-            <TextBlock Text="Only ZIP archives with valid modern ModInfo.xml entries are accepted. Mods live in your profile, never in the Steam installation."
+            <TextBlock Text="Install multiple modlets from one ZIP, or select several ZIP files at once. Supports ZIPs up to 16 GiB (up to 64 GiB unpacked) with disk-space checks. Mods stay in your profile."
                        TextWrapping="Wrap" Foreground="#B6C5D5"/>
             <ListBox x:Name="ModsList" Height="275" Background="#192C42"
                      SelectionChanged="OnModSelectionChanged"/>
@@ -122,7 +122,7 @@
             <CheckBox x:Name="ReplaceExistingCheckBox" Content="Replace existing mods on install (back up old copies)"
                       Foreground="#E1E9F1"/>
             <WrapPanel>
-              <Button Content="Install mod ZIP..." Margin="0,0,10,10" Padding="16,9" Click="OnInstallZipClick"/>
+              <Button Content="Install mod ZIP(s)..." Margin="0,0,10,10" Padding="16,9" Click="OnInstallZipClick"/>
               <Button Content="Enable selected" Margin="0,0,10,10" Padding="16,9" Click="OnEnableModClick"/>
               <Button Content="Disable selected" Margin="0,0,10,10" Padding="16,9" Click="OnDisableModClick"/>
               <Button Content="Archive selected mod" Margin="0,0,10,10" Padding="16,9" Click="OnArchiveModClick"/>

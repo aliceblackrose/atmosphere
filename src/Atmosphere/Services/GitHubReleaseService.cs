@@ -11,7 +11,7 @@ namespace Atmosphere.Services;
 /// </summary>
 public sealed class GitHubReleaseService
 {
-    private const long MaxDownload = 512L * 1024 * 1024;
+    private static readonly long MaxDownload = ModArchiveLimits.Default.MaxArchiveBytes;
     private const long MaxMetadata = 2L * 1024 * 1024;
     private static readonly HttpClient SharedClient = NewClient();
     private readonly HttpClient _client;
@@ -20,7 +20,7 @@ public sealed class GitHubReleaseService
 
     private static HttpClient NewClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(3) };
+        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(45) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
@@ -124,7 +124,7 @@ public sealed class GitHubReleaseService
                 var size = asset.TryGetProperty("size", out var s) && s.TryGetInt64(out var n)
                     ? n : -1L;
                 if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
-                    size is >= 0 and <= MaxDownload && IsAllowedAssetUrl(repository, url))
+                    size >= 0 && size <= MaxDownload && IsAllowedAssetUrl(repository, url))
                     assets.Add(new GitHubReleaseAsset(repository, name, url, size));
             }
         }
@@ -141,7 +141,7 @@ public sealed class GitHubReleaseService
     {
         if (!IsAllowedAssetUrl(asset.Repository, asset.DownloadUrl) ||
             !asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
-            asset.Size is < 0 or > MaxDownload)
+            (asset.Size < 0 || asset.Size > MaxDownload))
             throw new ArgumentException("Only ZIP assets from the selected GitHub Releases repository are allowed.");
 
         Directory.CreateDirectory(destinationDirectory);
@@ -153,7 +153,7 @@ public sealed class GitHubReleaseService
                 request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength > MaxDownload)
-                throw new InvalidDataException("Download exceeds 512 MiB limit.");
+                throw new InvalidDataException("Download exceeds the 16 GiB safety limit.");
 
             await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
             await using var output = new FileStream(path, FileMode.CreateNew,

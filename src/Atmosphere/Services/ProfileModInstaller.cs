@@ -10,15 +10,17 @@ namespace Atmosphere.Services;
 /// </summary>
 public sealed class ProfileModInstaller
 {
-    private const long MaxArchiveBytes = 512L * 1024 * 1024;
-    private const long MaxExpandedBytes = 1024L * 1024 * 1024;
-    private const long MaxFileBytes = 256L * 1024 * 1024;
-    private const int MaxEntries = 4000;
+    private readonly ModArchiveLimits _limits;
     private static readonly Regex SafeFolder = new(
         @"^[A-Za-z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private readonly ProfileStore _profiles;
 
-    public ProfileModInstaller(ProfileStore profiles) => _profiles = profiles;
+    public ProfileModInstaller(ProfileStore profiles, ModArchiveLimits? limits = null)
+    {
+        _profiles = profiles;
+        _limits = limits ?? ModArchiveLimits.Default;
+        _limits.Validate();
+    }
 
     private string GetSafeDirectory(string profileId)
     {
@@ -48,8 +50,12 @@ public sealed class ProfileModInstaller
     {
         var profileRoot = GetSafeDirectory(profileId);
         if (!File.Exists(zipPath)) throw new FileNotFoundException("ZIP archive not found.", zipPath);
-        if (new FileInfo(zipPath).Length > MaxArchiveBytes)
-            throw new InvalidDataException("ZIP exceeds the 512 MiB limit.");
+        var zipBytes = new FileInfo(zipPath).Length;
+        if (zipBytes > _limits.MaxArchiveBytes)
+            throw new InvalidDataException(
+                $"ZIP size ({zipBytes / ModArchiveLimits.GiB:F2} GiB) exceeds the " +
+                $"{_limits.MaxArchiveBytes / ModArchiveLimits.GiB:F2} GiB safety limit. " +
+                "Split the modpack into smaller ZIPs.");
 
         var staging = Path.Combine(profileRoot, ".staging", Guid.NewGuid().ToString("N"));
         var expanded = Path.Combine(staging, "expanded");
@@ -182,11 +188,38 @@ public sealed class ProfileModInstaller
             throw new IOException("Refusing to operate on a linked mod directory.");
     }
 
-    private static void ExtractValidated(string zipPath, string destination)
+    private void ExtractValidated(string zipPath, string destination)
     {
         using var archive = ZipFile.OpenRead(zipPath);
-        if (archive.Entries.Count > MaxEntries)
-            throw new InvalidDataException("Archive contains too many entries.");
+        if (archive.Entries.Count > _limits.MaxEntries)
+            throw new InvalidDataException(
+                $"Archive contains too many entries (maximum {_limits.MaxEntries:N0}).");
+
+        // Check archive headers and destination space before writing any extracted files.
+        // A malicious ZIP can lie about its sizes, so streaming checks below are retained.
+        long declaredTotal = 0;
+        foreach (var entry in archive.Entries)
+        {
+            if (entry.Length < 0 || entry.Length > _limits.MaxSingleFileBytes ||
+                declaredTotal > _limits.MaxExpandedBytes - entry.Length)
+                throw new InvalidDataException(
+                    $"Expanded ZIP exceeds a safety limit (" +
+                    $"{_limits.MaxExpandedBytes / ModArchiveLimits.GiB:F0} GiB total, " +
+                    $"{_limits.MaxSingleFileBytes / ModArchiveLimits.GiB:F0} GiB per file).");
+            declaredTotal += entry.Length;
+        }
+
+        var driveRoot = Path.GetPathRoot(Path.GetFullPath(destination));
+        if (!string.IsNullOrEmpty(driveRoot))
+        {
+            var available = new DriveInfo(driveRoot).AvailableFreeSpace;
+            var reserve = Math.Min(declaredTotal / 20, ModArchiveLimits.GiB);
+            if (available < declaredTotal + reserve)
+                throw new IOException(
+                    $"Not enough free disk space to unpack this modpack. " +
+                    $"Need about {(declaredTotal + reserve) / ModArchiveLimits.GiB:F2} GiB; " +
+                    $"available {available / ModArchiveLimits.GiB:F2} GiB.");
+        }
 
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         long total = 0;
@@ -216,7 +249,8 @@ public sealed class ProfileModInstaller
                 continue;
             }
 
-            if (entry.Length > MaxFileBytes || total + entry.Length > MaxExpandedBytes)
+            if (entry.Length > _limits.MaxSingleFileBytes ||
+                total > _limits.MaxExpandedBytes - entry.Length)
                 throw new InvalidDataException("Archive exceeds permitted extraction size.");
 
             Directory.CreateDirectory(Path.GetDirectoryName(target)!);
@@ -229,7 +263,7 @@ public sealed class ProfileModInstaller
             {
                 fileBytes += count;
                 total += count;
-                if (fileBytes > MaxFileBytes || total > MaxExpandedBytes)
+                if (fileBytes > _limits.MaxSingleFileBytes || total > _limits.MaxExpandedBytes)
                     throw new InvalidDataException("Archive exceeded extraction size limits.");
                 output.Write(buffer, 0, count);
             }
