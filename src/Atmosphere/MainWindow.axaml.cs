@@ -274,7 +274,7 @@ public partial class MainWindow : Window
     {
         var p = SelectedProfile;
         if (p is null) { Report("Select a profile first."); return; }
-        if (_busy) { Report("Finish the current mod installation first."); return; }
+        if (_busy) { Report("Finish the current operation first."); return; }
         try
         {
             var gamePath = p.GameDirectory ?? _gamePath.Text;
@@ -355,10 +355,11 @@ public partial class MainWindow : Window
             if (files.Count == 0) return;
             var path = files[0].TryGetLocalPath();
             if (string.IsNullOrWhiteSpace(path)) throw new InvalidOperationException("Please choose a local ZIP file.");
+            var replace = _replace.IsChecked == true;
             _busy = true;
             Report("Validating and installing mod ZIP...");
             var installed = await Task.Run(() =>
-                _installer.InstallZip(p.Id, path, _replace.IsChecked == true));
+                _installer.InstallZip(p.Id, path, replace));
             RefreshMods();
             Report("Installed " + string.Join(", ", installed.Select(m => m.DisplayName)) + " into " + p.Name + ".");
         }
@@ -377,7 +378,7 @@ public partial class MainWindow : Window
         if (_busy) return;
         try
         {
-            if (row.Value.Disabled == !enabled)
+            if (row.Value.Disabled == enabled)
             {
                 _installer.SetEnabled(p.Id, row.Value.Mod.FolderName, enabled);
                 RefreshMods();
@@ -468,8 +469,9 @@ public partial class MainWindow : Window
             _onlineStatus.Text = "Download complete. SHA-256: " + result.Sha256 +
                 "\nValidating and installing...";
             _cancelButton.IsEnabled = false; // Install phase is not cancellable.
+            var replace = _replace.IsChecked == true;
             var installed = await Task.Run(() =>
-                _installer.InstallZip(p.Id, downloadedFile, _replace.IsChecked == true));
+                _installer.InstallZip(p.Id, downloadedFile, replace));
             RefreshMods();
             _progress.Value = 100;
             _onlineStatus.Text = "Installed: " + string.Join(", ", installed.Select(x => x.DisplayName)) +

@@ -1,0 +1,49 @@
+name: Package desktop preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["phase-*/**"]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Test
+        run: dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj --configuration Release
+      - name: Publish self-contained launcher
+        shell: bash
+        run: |
+          dotnet publish src/Atmosphere/Atmosphere.csproj \
+            --configuration Release \
+            --runtime ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:PublishTrimmed=false \
+            -p:DebugType=None \
+            --output "out/atmosphere-${{ matrix.rid }}"
+      - name: Upload preview build
+        uses: actions/upload-artifact@v4
+        with:
+          name: atmosphere-${{ matrix.rid }}
+          path: out/atmosphere-${{ matrix.rid }}/
+          if-no-files-found: error
