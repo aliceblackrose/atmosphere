@@ -23,9 +23,9 @@ public sealed class StartupSmokeTests
     {
         var window = new MainWindow();
         window.Show();
-        Assert.NotNull(window.Content);
-        Assert.NotNull(window.FindControl<TabControl>("MainTabs"));
-        Assert.NotNull(window.FindControl<TextBlock>("GlobalStatusText"));
+        var root = Assert.IsType<Grid>(window.Content);
+        var tabs = Assert.Single(root.Children.OfType<TabControl>());
+        Assert.Equal(5, tabs.Items.Count);
         window.Close();
     }
 }
