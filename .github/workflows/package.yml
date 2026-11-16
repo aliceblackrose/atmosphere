@@ -110,12 +110,12 @@ jobs:
           set -euo pipefail
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             # An explicit version tag creates a normal, stable release.
-            gh release create "$GITHUB_REF_NAME" dist/* \
+            gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
               --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
           else
             # Unique preview tags keep every successful main-branch build downloadable.
             tag="preview-$GITHUB_RUN_NUMBER"
-            gh release create "$tag" dist/* \
+            gh release create "$tag" dist/* --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" --title "Atmosphere preview #$GITHUB_RUN_NUMBER" \
               --notes "Automated development preview from commit $GITHUB_SHA. Windows is the primary supported platform; manual game integration testing is still required." \
               --prerelease --latest=false
