@@ -117,4 +117,4 @@ View [build/test runs](https://github.com/aliceblackrose/atmosphere/actions/work
 
 ---
 
-<sub>Atmosphere is an independent community project and is not affiliated with The Fun Pimps, Valve, or third-party mod creators. **No license has been selected yet**; the repository is source-available and should not be described as open-source until a license is added.</sub>
+<sub>Atmosphere is an independent community project and is not affiliated with The Fun Pimps, Valve, or third-party mod creators. **GNU GPL v3 license**; the repository is source-available and should not be described as open-source until a license is added.</sub>
