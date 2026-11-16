@@ -64,3 +64,59 @@ jobs:
           name: atmosphere-${{ matrix.rid }}
           path: out/atmosphere-${{ matrix.rid }}/
           if-no-files-found: error
+
+  release:
+    name: Publish downloadable GitHub Release
+    # Feature branches and manual workflow runs keep using temporary Actions artifacts.
+    # Every main push gets a preview; pushed v* tags become versioned releases.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download successful platform builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: atmosphere-*
+          path: release-bundles
+      - name: Prepare standalone EXE, platform archives, and SHA-256 checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for rid in win-x64 linux-x64 osx-arm64; do
+            test -d "release-bundles/atmosphere-$rid"
+          done
+
+          # Offer the Windows executable directly and a ZIP with all published files.
+          test -f release-bundles/atmosphere-win-x64/Atmosphere.exe
+          cp release-bundles/atmosphere-win-x64/Atmosphere.exe dist/Atmosphere.exe
+          (cd release-bundles/atmosphere-win-x64 && zip -q -r "$GITHUB_WORKSPACE/dist/Atmosphere-win-x64.zip" .)
+
+          # GitHub Actions artifacts do not preserve Unix executable permissions.
+          for rid in linux-x64 osx-arm64; do
+            test -f "release-bundles/atmosphere-$rid/Atmosphere"
+            chmod +x "release-bundles/atmosphere-$rid/Atmosphere"
+            tar -czf "dist/Atmosphere-$rid.tar.gz" -C "release-bundles/atmosphere-$rid" .
+          done
+          (cd dist && sha256sum Atmosphere* > SHA256SUMS.txt)
+
+      - name: Create preview or versioned GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            # An explicit version tag creates a normal, stable release.
+            gh release create "$GITHUB_REF_NAME" dist/* \
+              --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
+          else
+            # Unique preview tags keep every successful main-branch build downloadable.
+            tag="preview-$GITHUB_RUN_NUMBER"
+            gh release create "$tag" dist/* \
+              --target "$GITHUB_SHA" --title "Atmosphere preview #$GITHUB_RUN_NUMBER" \
+              --notes "Automated development preview from commit $GITHUB_SHA. Windows is the primary supported platform; manual game integration testing is still required." \
+              --prerelease --latest=false
+          fi
