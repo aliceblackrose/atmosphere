@@ -6,7 +6,6 @@ using Atmosphere.Models;
 using Atmosphere.Services;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 
 namespace Atmosphere;
@@ -46,9 +45,10 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        AvaloniaXamlLoader.Load(this);
-        T Find<T>(string name) where T : Control => this.FindControl<T>(name)
-            ?? throw new InvalidOperationException("UI element missing: " + name);
+        BuildInterface();
+        T Find<T>(string name) where T : Control =>
+            _namedControls.TryGetValue(name, out var control) && control is T result
+                ? result : throw new InvalidOperationException("UI element missing: " + name);
 
         _gamePath = Find<TextBox>("GamePathTextBox");
         _gameStatus = Find<TextBlock>("GameStatusText");

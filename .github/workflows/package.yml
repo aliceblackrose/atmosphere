@@ -3,7 +3,7 @@ name: Package desktop preview
 on:
   workflow_dispatch:
   push:
-    branches: [main, "phase-*/**", "feature/**"]
+    branches: [main, "phase-*/**", "feature/**", "refactor/**"]
     tags: ["v*"]
 
 permissions:
@@ -27,13 +27,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Generate Windows icon resources from existing Atmosphere artwork
-        run: |
-          python -m pip install --disable-pip-version-check "Pillow>=11,<13"
-          python tools/make_icon.py
+      - name: Generate Windows icon in C#
+        if: matrix.rid == 'win-x64'
+        run: dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj --configuration Release -- create
       - name: Test
         run: dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj --configuration Release
       - name: Publish self-contained launcher
@@ -48,12 +44,9 @@ jobs:
             -p:PublishTrimmed=false \
             -p:DebugType=None \
             --output "out/atmosphere-${{ matrix.rid }}"
-      - name: Verify Windows executable contains native icon resources
+      - name: Verify native Windows executable icon in C#
         if: matrix.rid == 'win-x64'
-        shell: bash
-        run: |
-          python -m pip install --disable-pip-version-check "pefile>=2024.8"
-          python tools/verify_win_icon.py "out/atmosphere-win-x64/Atmosphere.exe"
+        run: dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj --configuration Release -- verify out/atmosphere-win-x64/Atmosphere.exe
       - name: Copy source icon for desktop shortcuts
         shell: bash
         run: |
