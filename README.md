@@ -36,6 +36,25 @@ dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj
 
 GitHub Actions artifacts provide self-contained platform-specific preview executables on working feature branches. Download from the **Package desktop preview** workflow's artifact list. Windows is the primary supported target until manual platform testing.
 
+## Download Atmosphere
+
+Download ready-to-run release assets from **[GitHub Releases](https://github.com/aliceblackrose/atmosphere/releases)**. No .NET installation is needed for these self-contained packages.
+
+- **Windows (x64):** `Atmosphere.exe` is available as a direct download, or get `Atmosphere-win-x64.zip` for the complete published folder. Windows is the primary supported platform.
+- **Linux (x64):** download `Atmosphere-linux-x64.tar.gz`, extract it, and launch `./Atmosphere` (some Linux desktop dependencies may still be required).
+- **macOS (Apple Silicon):** download `Atmosphere-osx-arm64.tar.gz`, extract it, and launch `./Atmosphere`. This is an unsigned preview binary, not a `.app` bundle; macOS may block it until you explicitly permit it.
+- **Integrity:** `SHA256SUMS.txt` contains SHA-256 hashes of all downloadable binary assets.
+
+Every successful push to `main` automatically creates a uniquely tagged **preview prerelease** (`preview-<run-number>`). For a versioned release, push a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+After the Windows, Linux and macOS build/test jobs pass, the workflow publishes the downloadable files and generated release notes for that tag. A manually dispatched package workflow or a feature-branch build still uploads temporary Actions artifacts but does not create a Release.
+
+**Preview warning:** Actual game integration and graphical smoke tests are not automated yet. Windows remains the primary supported target.
 ## Desktop icon and branding
 
 The original `icon.png` in the repository root is embedded in the app and displayed in the header, Windows title bar, and task switcher via Avalonia's window icon. Release packaging additionally generates `src/Atmosphere/Assets/Atmosphere.ico` for Windows executable metadata (Explorer/taskbar icon), using the same source image.
