@@ -21,7 +21,7 @@ public partial class App : Application
 
         var s2 = new Style(x => x.OfType<Button>());
         s2.Setters.Add(new Setter(Button.CornerRadiusProperty, new CornerRadius(10)));
-        s2.Setters.Add(new Setter(Button.MinHeightProperty, 39));
+        s2.Setters.Add(new Setter(Button.MinHeightProperty, 39d));
         s2.Setters.Add(new Setter(Button.PaddingProperty, new Thickness(16, 10)));
         s2.Setters.Add(new Setter(Button.BackgroundProperty, Brush.Parse("#253149")));
         s2.Setters.Add(new Setter(Button.ForegroundProperty, Brush.Parse("#E6EDF9")));
@@ -66,7 +66,7 @@ public partial class App : Application
         s9.Setters.Add(new Setter(TextBox.BorderThicknessProperty, new Thickness(1)));
         s9.Setters.Add(new Setter(TextBox.CornerRadiusProperty, new CornerRadius(10)));
         s9.Setters.Add(new Setter(TextBox.PaddingProperty, new Thickness(13, 10)));
-        s9.Setters.Add(new Setter(TextBox.MinHeightProperty, 42));
+        s9.Setters.Add(new Setter(TextBox.MinHeightProperty, 42d));
         Styles.Add(s9);
 
         var s10 = new Style(x => x.OfType<TextBox>().Class(":focus"));
@@ -100,19 +100,19 @@ public partial class App : Application
         Styles.Add(s14);
 
         var s15 = new Style(x => x.OfType<TextBlock>().Class("page-title"));
-        s15.Setters.Add(new Setter(TextBlock.FontSizeProperty, 29));
+        s15.Setters.Add(new Setter(TextBlock.FontSizeProperty, 29d));
         s15.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeight.Bold));
         s15.Setters.Add(new Setter(TextBlock.ForegroundProperty, Brush.Parse("#F4F6FF")));
         Styles.Add(s15);
 
         var s16 = new Style(x => x.OfType<TextBlock>().Class("eyebrow"));
-        s16.Setters.Add(new Setter(TextBlock.FontSizeProperty, 11));
+        s16.Setters.Add(new Setter(TextBlock.FontSizeProperty, 11d));
         s16.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeight.Bold));
         s16.Setters.Add(new Setter(TextBlock.ForegroundProperty, Brush.Parse("#9AA9C9")));
         Styles.Add(s16);
 
         var s17 = new Style(x => x.OfType<TextBlock>().Class("section-title"));
-        s17.Setters.Add(new Setter(TextBlock.FontSizeProperty, 16));
+        s17.Setters.Add(new Setter(TextBlock.FontSizeProperty, 16d));
         s17.Setters.Add(new Setter(TextBlock.FontWeightProperty, FontWeight.SemiBold));
         s17.Setters.Add(new Setter(TextBlock.ForegroundProperty, Brush.Parse("#F0F4FD")));
         Styles.Add(s17);
@@ -123,11 +123,11 @@ public partial class App : Application
         Styles.Add(s18);
 
         var s19 = new Style(x => x.OfType<TabItem>());
-        s19.Setters.Add(new Setter(TabItem.WidthProperty, 230));
-        s19.Setters.Add(new Setter(TabItem.HeightProperty, 54));
+        s19.Setters.Add(new Setter(TabItem.WidthProperty, 230d));
+        s19.Setters.Add(new Setter(TabItem.HeightProperty, 54d));
         s19.Setters.Add(new Setter(TabItem.PaddingProperty, new Thickness(15, 12)));
         s19.Setters.Add(new Setter(TabItem.MarginProperty, new Thickness(8, 3)));
-        s19.Setters.Add(new Setter(TabItem.FontSizeProperty, 15));
+        s19.Setters.Add(new Setter(TabItem.FontSizeProperty, 15d));
         s19.Setters.Add(new Setter(TabItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Left));
         s19.Setters.Add(new Setter(TabItem.ForegroundProperty, Brush.Parse("#A9B9D0")));
         s19.Setters.Add(new Setter(TabItem.BackgroundProperty, Brush.Parse("Transparent")));
