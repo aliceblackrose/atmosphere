@@ -97,7 +97,7 @@ internal static class Program
         var section = sections.FirstOrDefault(x =>
             directory.RelativeVirtualAddress >= x.VirtualAddress &&
             directory.RelativeVirtualAddress < x.VirtualAddress + Math.Max(x.VirtualSize, x.SizeOfRawData));
-        if (section is null)
+        if (section.SizeOfRawData <= 0)
             throw new InvalidDataException("PE resource directory is not in a file section.");
 
         long resourceOffset = section.PointerToRawData + directory.RelativeVirtualAddress - section.VirtualAddress;
