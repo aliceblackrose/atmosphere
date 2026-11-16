@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -118,7 +119,7 @@ public partial class MainWindow
         var n17 = new StackPanel();
         n17.Orientation = Orientation.Horizontal;
         n17.Spacing = 14;
-        [object Object].Header = n17;
+        n16.Header = n17;
         var n18 = new PathIcon();
         n18.Width = 20;
         n18.Height = 20;
@@ -160,7 +161,7 @@ public partial class MainWindow
         var n27 = new LinearGradientBrush();
         n27.StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative);
         n27.EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative);
-        [object Object].Background = n27;
+        n26.Background = n27;
         var n28 = new GradientStop();
         n28.Color = Color.Parse("#292D61");
         n28.Offset = 0;
@@ -390,7 +391,7 @@ public partial class MainWindow
         var n73 = new StackPanel();
         n73.Orientation = Orientation.Horizontal;
         n73.Spacing = 14;
-        [object Object].Header = n73;
+        n72.Header = n73;
         var n74 = new PathIcon();
         n74.Width = 20;
         n74.Height = 20;
@@ -543,7 +544,7 @@ public partial class MainWindow
         var n107 = new StackPanel();
         n107.Orientation = Orientation.Horizontal;
         n107.Spacing = 14;
-        [object Object].Header = n107;
+        n106.Header = n107;
         var n108 = new PathIcon();
         n108.Width = 20;
         n108.Height = 20;
@@ -821,7 +822,7 @@ public partial class MainWindow
         var n169 = new StackPanel();
         n169.Orientation = Orientation.Horizontal;
         n169.Spacing = 14;
-        [object Object].Header = n169;
+        n168.Header = n169;
         var n170 = new PathIcon();
         n170.Width = 20;
         n170.Height = 20;
@@ -950,7 +951,7 @@ public partial class MainWindow
         var n198 = new StackPanel();
         n198.Orientation = Orientation.Horizontal;
         n198.Spacing = 14;
-        [object Object].Header = n198;
+        n197.Header = n198;
         var n199 = new PathIcon();
         n199.Width = 20;
         n199.Height = 20;
