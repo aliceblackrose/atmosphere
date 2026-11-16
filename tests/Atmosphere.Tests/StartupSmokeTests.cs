@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Atmosphere;
+using Xunit;
 
 [assembly: AvaloniaTestApplication(typeof(Atmosphere.Tests.TestAppBuilder))]
 
@@ -20,10 +21,11 @@ public sealed class StartupSmokeTests
     [AvaloniaFact]
     public void MainWindow_CanBeCreatedAndShown()
     {
-        using var window = new MainWindow();
+        var window = new MainWindow();
         window.Show();
         Assert.NotNull(window.Content);
         Assert.NotNull(window.FindControl<TabControl>("MainTabs"));
         Assert.NotNull(window.FindControl<TextBlock>("GlobalStatusText"));
+        window.Close();
     }
 }
