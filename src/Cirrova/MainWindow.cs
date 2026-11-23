@@ -22,9 +22,11 @@ public partial class MainWindow : Window
     private readonly ProfileGameLauncher _profileLauncher;
     private readonly LauncherSettings _settings;
 
-    private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl, _catalogSearch;
+    private readonly TextBox _gamePath, _newProfileName, _renameProfile, _versionNote, _githubUrl, _catalogSearch, _modSearch;
     private readonly TextBlock _gameStatus, _gameDetails, _globalStatus, _selectedProfileText, _profileStorageText;
     private readonly TabControl _mainTabs;
+    private readonly ComboBox _modStatusFilter;
+    private readonly TextBlock _modFilterSummary;
     private readonly TextBlock _overviewGameStatus, _overviewGamePath, _overviewProfileCount;
     private readonly TextBlock _overviewModCount, _overviewSelectedProfile;
     private readonly TextBlock _modProfileLabel, _modDetails, _releaseInfo, _selectedAsset, _onlineStatus;
@@ -37,6 +39,7 @@ public partial class MainWindow : Window
     private List<ModProfile> _profileRows = new();
     private List<ModProfile> _archivedRows = new();
     private List<(ModRecord Mod, bool Disabled)> _modRows = new();
+    private List<(ModRecord Mod, bool Disabled)> _visibleModRows = new();
     private GitHubRelease? _currentRelease;
     private IReadOnlyList<GitHubCatalogEntry> _catalogRows = Array.Empty<GitHubCatalogEntry>();
     private CancellationTokenSource? _githubToken;
@@ -71,6 +74,9 @@ public partial class MainWindow : Window
         _profileStorageText = Find<TextBlock>("ProfileStorageText");
         _noEac = Find<CheckBox>("NoEacCheckBox");
         _modsList = Find<ListBox>("ModsList");
+        _modSearch = Find<TextBox>("ModSearchTextBox");
+        _modStatusFilter = Find<ComboBox>("ModStatusFilter");
+        _modFilterSummary = Find<TextBlock>("ModFilterSummary");
         _gameModsList = Find<ListBox>("GameModList");
         _modProfileLabel = Find<TextBlock>("ModProfileLabel");
         _modDetails = Find<TextBlock>("ModDetailsText");
@@ -106,8 +112,8 @@ public partial class MainWindow : Window
             ? _profileRows[index] : null;
 
     private (ModRecord Mod, bool Disabled)? SelectedMod =>
-        _modsList.SelectedIndex is var index && index >= 0 && index < _modRows.Count
-            ? _modRows[index] : null;
+        _modsList.SelectedIndex is var index && index >= 0 && index < _visibleModRows.Count
+            ? _visibleModRows[index] : null;
 
     private GitHubReleaseAsset? SelectedAsset =>
         _currentRelease is not null && _assetsList.SelectedIndex is var index &&
@@ -651,14 +657,64 @@ public partial class MainWindow : Window
                 _modRows.AddRange(_installer.Installed(p.Id).Select(mod => (mod, false)));
                 _modRows.AddRange(_installer.Disabled(p.Id).Select(mod => (mod, true)));
             }
-            _modsList.ItemsSource = _modRows.Select(row =>
-                (row.Item2 ? "○ Disabled   " : "● Enabled   ") + FormatMod(row.Item1))
-                .DefaultIfEmpty("No mods installed for this profile.").ToArray();
-            _modDetails.Text = p is null ? "Select or create a profile first." :
-                "Found " + _modRows.Count + " modlets in this profile.";
+            ApplyModFilters();
+            if (_modsList.SelectedIndex < 0)
+                _modDetails.Text = p is null ? "Select or create a profile first." :
+                    "Found " + _modRows.Count + " modlets in this profile.";
             RefreshOverview();
         }
         catch (Exception ex) { Error("Could not read profile mods", ex); }
+    }
+
+    private void OnModFilterChanged(object? sender, TextChangedEventArgs e) => ApplyModFilters();
+
+    private void OnModStatusFilterChanged(object? sender, SelectionChangedEventArgs e) =>
+        ApplyModFilters();
+
+    private void ApplyModFilters()
+    {
+        // TextChanged can fire during startup before the named controls are bound.
+        if (_modsList is null || _modSearch is null || _modStatusFilter is null ||
+            _modFilterSummary is null || _modDetails is null)
+            return;
+
+        var current = SelectedMod?.Mod.FolderName;
+        var query = _modSearch.Text?.Trim() ?? "";
+        var status = _modStatusFilter.SelectedIndex;
+        _visibleModRows = _modRows.Where(row =>
+            (status switch
+            {
+                1 => !row.Disabled,
+                2 => row.Disabled,
+                3 => !row.Mod.IsValid,
+                _ => true
+            }) &&
+            (query.Length == 0 ||
+             row.Mod.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+             row.Mod.FolderName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+             row.Mod.Author.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+             row.Mod.Version.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+             row.Mod.Description.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        _modsList.ItemsSource = _visibleModRows
+            .Select(row => (row.Disabled ? "○  Disabled    " : "●  Enabled     ") +
+                           FormatMod(row.Mod))
+            .DefaultIfEmpty(_modRows.Count == 0
+                ? "No mods installed for this profile."
+                : "No mods match your search or filter.")
+            .ToArray();
+
+        _modFilterSummary.Text = _visibleModRows.Count == _modRows.Count
+            ? _modRows.Count + " mod(s) in this profile"
+            : _visibleModRows.Count + " of " + _modRows.Count + " mods shown";
+
+        var selectedIndex = _visibleModRows.FindIndex(row => row.Mod.FolderName == current);
+        _modsList.SelectedIndex = selectedIndex;
+        if (selectedIndex < 0)
+            _modDetails.Text = _visibleModRows.Count == 0 && _modRows.Count > 0
+                ? "No matching mods. Clear the search or select All mods."
+                : "Select a mod to see details and compatibility warnings.";
     }
 
     private void OnModSelectionChanged(object? sender, SelectionChangedEventArgs e)
