@@ -1,7 +1,7 @@
-using Atmosphere.Services;
+using Cirrova.Services;
 using Xunit;
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class ModInventoryTests
 {
@@ -111,7 +111,7 @@ public sealed class ModInventoryTests
 
 public sealed class TempDirectory : IDisposable
 {
-    public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "atmosphere-" + Guid.NewGuid().ToString("N"));
+    public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "cirrova-" + Guid.NewGuid().ToString("N"));
     public TempDirectory() => Directory.CreateDirectory(Path);
     public void Dispose()
     {

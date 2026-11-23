@@ -1,15 +1,15 @@
-using Atmosphere.Models;
-using Atmosphere.Services;
+using Cirrova.Models;
+using Cirrova.Services;
 using Xunit;
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class LauncherSettingsStoreTests
 {
     [Fact]
     public void SaveAndLoad_RoundTripsGameDirectory()
     {
-        var directory = Path.Combine(Path.GetTempPath(), "atmosphere-settings-" + Guid.NewGuid());
+        var directory = Path.Combine(Path.GetTempPath(), "cirrova-settings-" + Guid.NewGuid());
         try
         {
             var store = new LauncherSettingsStore(directory);
@@ -29,7 +29,7 @@ public sealed class LauncherSettingsStoreTests
     [Fact]
     public void Load_InvalidJsonUsesDefaultSettings()
     {
-        var directory = Path.Combine(Path.GetTempPath(), "atmosphere-settings-" + Guid.NewGuid());
+        var directory = Path.Combine(Path.GetTempPath(), "cirrova-settings-" + Guid.NewGuid());
         Directory.CreateDirectory(directory);
         try
         {

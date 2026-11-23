@@ -1,9 +1,9 @@
 using System.Net;
-using Atmosphere.Models;
-using Atmosphere.Services;
+using Cirrova.Models;
+using Cirrova.Services;
 using Xunit;
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class GitHubReleaseServiceTests
 {

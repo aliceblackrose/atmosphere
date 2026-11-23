@@ -1,14 +1,14 @@
-using Atmosphere.Services;
+using Cirrova.Services;
 using Xunit;
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class GameLocatorTests
 {
     [Fact]
     public void FindInSteamRoots_DetectsDefaultSteamLibrary()
     {
-        var directory = Path.Combine(Path.GetTempPath(), "atmosphere-test-" + Guid.NewGuid());
+        var directory = Path.Combine(Path.GetTempPath(), "cirrova-test-" + Guid.NewGuid());
         var gameDirectory = Path.Combine(directory, "steamapps", "common", "7 Days To Die");
         Directory.CreateDirectory(gameDirectory);
 

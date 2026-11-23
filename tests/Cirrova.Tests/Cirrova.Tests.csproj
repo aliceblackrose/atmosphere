@@ -15,6 +15,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Atmosphere/Atmosphere.csproj" />
+    <ProjectReference Include="../../src/Cirrova/Cirrova.csproj" />
   </ItemGroup>
 </Project>
