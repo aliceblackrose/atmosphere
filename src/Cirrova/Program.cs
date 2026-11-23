@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace Atmosphere;
+namespace Cirrova;
 
 internal static class Program
 {

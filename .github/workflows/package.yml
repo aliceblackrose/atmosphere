@@ -31,13 +31,13 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Generate Windows icon in C#
         if: matrix.rid == 'win-x64'
-        run: dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj --configuration Release -- create
+        run: dotnet run --project tools/Cirrova.IconTool/Cirrova.IconTool.csproj --configuration Release -- create
       - name: Test
-        run: dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj --configuration Release
+        run: dotnet test tests/Cirrova.Tests/Cirrova.Tests.csproj --configuration Release
       - name: Publish self-contained launcher
         shell: bash
         run: |
-          dotnet publish src/Atmosphere/Atmosphere.csproj \
+          dotnet publish src/Cirrova/Cirrova.csproj \
             --configuration Release \
             --runtime ${{ matrix.rid }} \
             --self-contained true \
@@ -45,19 +45,19 @@ jobs:
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:PublishTrimmed=false \
             -p:DebugType=None \
-            --output "out/atmosphere-${{ matrix.rid }}"
+            --output "out/cirrova-${{ matrix.rid }}"
       - name: Verify native Windows executable icon in C#
         if: matrix.rid == 'win-x64'
-        run: dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj --configuration Release -- verify out/atmosphere-win-x64/Atmosphere.exe
+        run: dotnet run --project tools/Cirrova.IconTool/Cirrova.IconTool.csproj --configuration Release -- verify out/cirrova-win-x64/Cirrova.exe
       - name: Copy source icon for desktop shortcuts
         shell: bash
         run: |
-          cp icon.png "out/atmosphere-${{ matrix.rid }}/Atmosphere.png"
+          cp icon.png "out/cirrova-${{ matrix.rid }}/Cirrova.png"
       - name: Upload preview build
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: atmosphere-${{ matrix.rid }}
-          path: out/atmosphere-${{ matrix.rid }}/
+          name: cirrova-${{ matrix.rid }}
+          path: out/cirrova-${{ matrix.rid }}/
           if-no-files-found: error
 
   release:
@@ -73,7 +73,7 @@ jobs:
       - name: Download successful platform builds
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: atmosphere-*
+          pattern: cirrova-*
           path: release-bundles
       - name: Prepare standalone EXE, platform archives, and SHA-256 checksums
         shell: bash
@@ -81,21 +81,21 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           for rid in win-x64 linux-x64 osx-arm64; do
-            test -d "release-bundles/atmosphere-$rid"
+            test -d "release-bundles/cirrova-$rid"
           done
 
           # Offer the Windows executable directly and a ZIP with all published files.
-          test -f release-bundles/atmosphere-win-x64/Atmosphere.exe
-          cp release-bundles/atmosphere-win-x64/Atmosphere.exe dist/Atmosphere.exe
-          (cd release-bundles/atmosphere-win-x64 && zip -q -r "$GITHUB_WORKSPACE/dist/Atmosphere-win-x64.zip" .)
+          test -f release-bundles/cirrova-win-x64/Cirrova.exe
+          cp release-bundles/cirrova-win-x64/Cirrova.exe dist/Cirrova.exe
+          (cd release-bundles/cirrova-win-x64 && zip -q -r "$GITHUB_WORKSPACE/dist/Cirrova-win-x64.zip" .)
 
           # GitHub Actions artifacts do not preserve Unix executable permissions.
           for rid in linux-x64 osx-arm64; do
-            test -f "release-bundles/atmosphere-$rid/Atmosphere"
-            chmod +x "release-bundles/atmosphere-$rid/Atmosphere"
-            tar -czf "dist/Atmosphere-$rid.tar.gz" -C "release-bundles/atmosphere-$rid" .
+            test -f "release-bundles/cirrova-$rid/Cirrova"
+            chmod +x "release-bundles/cirrova-$rid/Cirrova"
+            tar -czf "dist/Cirrova-$rid.tar.gz" -C "release-bundles/cirrova-$rid" .
           done
-          (cd dist && sha256sum Atmosphere* > SHA256SUMS.txt)
+          (cd dist && sha256sum Cirrova* > SHA256SUMS.txt)
 
       - name: Create preview or versioned GitHub Release
         shell: bash
@@ -111,7 +111,7 @@ jobs:
             # Unique preview tags keep every successful main-branch build downloadable.
             tag="preview-$GITHUB_RUN_NUMBER"
             gh release create "$tag" dist/* --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" --title "Atmosphere preview #$GITHUB_RUN_NUMBER" \
+              --target "$GITHUB_SHA" --title "Cirrova preview #$GITHUB_RUN_NUMBER" \
               --notes "Automated development preview from commit $GITHUB_SHA. Windows is the primary supported platform; manual game integration testing is still required." \
               --prerelease --latest=false
           fi
