@@ -1,4 +1,4 @@
-# Atmosphere desktop experience
+# Cirrova desktop experience
 
 The desktop app uses a consistent dark Fluent design to simplify the original tabbed interface.
 

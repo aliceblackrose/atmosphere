@@ -1,6 +1,6 @@
 # Supported 7 Days to Die modlets
 
-Atmosphere recognizes the current **ModInfo.xml v2** format, directly inside each modlet folder under `Mods`:
+Cirrova recognizes the current **ModInfo.xml v2** format, directly inside each modlet folder under `Mods`:
 
 ```xml
 <xml>
@@ -14,7 +14,7 @@ Atmosphere recognizes the current **ModInfo.xml v2** format, directly inside eac
 
 Old `<xml><ModInfo>...</ModInfo></xml>` metadata is detected but flagged as incompatible with modern versions. Duplicate internal IDs, missing `ModInfo.xml`, and malformed XML are also flagged. A DLL is shown as an EAC compatibility warning; merely detecting a DLL never executes it.
 
-Game-level Mods can load in addition to user-data Mods. Atmosphere must not claim perfect isolation when the base Steam install already has modlets installed.
+Game-level Mods can load in addition to user-data Mods. Cirrova must not claim perfect isolation when the base Steam install already has modlets installed.
 
 References:
 - https://7daystodie.wiki.gg/wiki/Mod_Structure

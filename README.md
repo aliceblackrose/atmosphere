@@ -1,19 +1,19 @@
 <div align="center">
-  <img src="icon.png" alt="Atmosphere icon" width="116" />
+  <img src="icon.png" alt="Cirrova icon" width="116" />
 
-  # Atmosphere
+  # Cirrova
 
   **Your wasteland. Your rules.**
 
   A modern, profile-based mod launcher for **7 Days to Die**.
 
-  [![Build & test](https://github.com/aliceblackrose/atmosphere/actions/workflows/ci.yml/badge.svg)](https://github.com/aliceblackrose/atmosphere/actions/workflows/ci.yml)
-  [![Desktop packages](https://github.com/aliceblackrose/atmosphere/actions/workflows/package.yml/badge.svg)](https://github.com/aliceblackrose/atmosphere/actions/workflows/package.yml)
+  [![Build & test](https://github.com/aliceblackrose/cirrova/actions/workflows/ci.yml/badge.svg)](https://github.com/aliceblackrose/cirrova/actions/workflows/ci.yml)
+  [![Desktop packages](https://github.com/aliceblackrose/cirrova/actions/workflows/package.yml/badge.svg)](https://github.com/aliceblackrose/cirrova/actions/workflows/package.yml)
   ![C#](https://img.shields.io/badge/Source-C%23-6d60d9)
   ![.NET 10](https://img.shields.io/badge/.NET-10-512bd4)
   ![Preview](https://img.shields.io/badge/Status-Preview-orange)
 
-  [**Download**](https://github.com/aliceblackrose/atmosphere/releases) ·
+  [**Download**](https://github.com/aliceblackrose/cirrova/releases) ·
   [User guide](docs/USER-GUIDE.md) ·
   [How profiles work](docs/LAUNCHING.md) ·
   [Roadmap](docs/ROADMAP.md)
@@ -23,23 +23,23 @@
 
 ## Download
 
-**[Browse downloadable releases →](https://github.com/aliceblackrose/atmosphere/releases)**
+**[Browse downloadable releases →](https://github.com/aliceblackrose/cirrova/releases)**
 
-Atmosphere publishes self-contained desktop builds. You **do not need to install the .NET SDK** to use a release package.
+Cirrova publishes self-contained desktop builds. You **do not need to install the .NET SDK** to use a release package.
 
 | Platform | Release asset | How to run |
 | --- | --- | --- |
-| **Windows x64** | `Atmosphere.exe` | Download and launch directly |
-| Windows x64 | `Atmosphere-win-x64.zip` | Extract the complete package, then open `Atmosphere.exe` |
-| Linux x64 | `Atmosphere-linux-x64.tar.gz` | Extract, then run `./Atmosphere` |
-| macOS Apple Silicon | `Atmosphere-osx-arm64.tar.gz` | Extract, then run `./Atmosphere` |
+| **Windows x64** | `Cirrova.exe` | Download and launch directly |
+| Windows x64 | `Cirrova-win-x64.zip` | Extract the complete package, then open `Cirrova.exe` |
+| Linux x64 | `Cirrova-linux-x64.tar.gz` | Extract, then run `./Cirrova` |
+| macOS Apple Silicon | `Cirrova-osx-arm64.tar.gz` | Extract, then run `./Cirrova` |
 
 Each release includes `SHA256SUMS.txt` for file-integrity checks. Windows is the primary supported platform. macOS builds are unsigned command-line-launchable preview binaries, **not** signed `.app` bundles or installers, and may be blocked by Gatekeeper. Linux may require desktop-native libraries provided by your distribution.
 
 > [!IMPORTANT]
 > **Preview software.** Automated builds and unit tests do not substitute for graphical and real-game smoke tests. Back up important saves and profiles before experimenting with game copies or modpacks.
 
-## What Atmosphere does
+## What Cirrova does
 
 | Area | Capabilities |
 | --- | --- |
@@ -65,24 +65,24 @@ Each release includes `SHA256SUMS.txt` for file-integrity checks. Windows is the
 Install the [**.NET 10 SDK**](https://dotnet.microsoft.com/download/dotnet/10.0), then run:
 
 ```bash
-git clone https://github.com/aliceblackrose/atmosphere.git
-cd atmosphere
-dotnet restore tests/Atmosphere.Tests/Atmosphere.Tests.csproj
-dotnet run --project src/Atmosphere/Atmosphere.csproj
+git clone https://github.com/aliceblackrose/cirrova.git
+cd cirrova
+dotnet restore tests/Cirrova.Tests/Cirrova.Tests.csproj
+dotnet run --project src/Cirrova/Cirrova.csproj
 ```
 
 Run the test suite:
 
 ```bash
-dotnet test tests/Atmosphere.Tests/Atmosphere.Tests.csproj -c Release
+dotnet test tests/Cirrova.Tests/Cirrova.Tests.csproj -c Release
 ```
 
 Build a self-contained Windows package from **Windows**:
 
 ```powershell
-dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj -c Release -- create
-dotnet publish src/Atmosphere/Atmosphere.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
-dotnet run --project tools/Atmosphere.IconTool/Atmosphere.IconTool.csproj -c Release -- verify publish/Atmosphere.exe
+dotnet run --project tools/Cirrova.IconTool/Cirrova.IconTool.csproj -c Release -- create
+dotnet publish src/Cirrova/Cirrova.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+dotnet run --project tools/Cirrova.IconTool/Cirrova.IconTool.csproj -c Release -- verify publish/Cirrova.exe
 ```
 
 For Linux and macOS use the appropriate runtime identifier (`linux-x64` or `osx-arm64`) with `dotnet publish`. The Windows `.ico` tool is Windows-only; the original app artwork is embedded for every platform.
@@ -100,11 +100,11 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-View [build/test runs](https://github.com/aliceblackrose/atmosphere/actions/workflows/ci.yml), [desktop packaging](https://github.com/aliceblackrose/atmosphere/actions/workflows/package.yml), and [published releases](https://github.com/aliceblackrose/atmosphere/releases).
+View [build/test runs](https://github.com/aliceblackrose/cirrova/actions/workflows/ci.yml), [desktop packaging](https://github.com/aliceblackrose/cirrova/actions/workflows/package.yml), and [published releases](https://github.com/aliceblackrose/cirrova/releases).
 
 ## Safety and limitations
 
-- ZIP downloads are limited to **16 GiB per archive** and **64 GiB unpacked**. Atmosphere performs disk-space checks and keeps backups when replacing mods.
+- ZIP downloads are limited to **16 GiB per archive** and **64 GiB unpacked**. Cirrova performs disk-space checks and keeps backups when replacing mods.
 - A recorded SHA-256 hash helps detect download changes; it **does not authenticate the publisher**. GitHub search results are not curated or verified.
 - DLL-based game mods can execute arbitrary code. Install only from sources you trust, and check game-version compatibility.
 - Use `-noeac` only when appropriate for the mods and game mode in question.
@@ -117,4 +117,4 @@ View [build/test runs](https://github.com/aliceblackrose/atmosphere/actions/work
 
 ---
 
-<sub>Atmosphere is an independent community project and is not affiliated with The Fun Pimps, Valve, or third-party mod creators. **GNU GPL v3 license**; the repository is source-available and should not be described as open-source until a license is added.</sub>
+<sub>Cirrova is an independent community project and is not affiliated with The Fun Pimps, Valve, or third-party mod creators. **GNU GPL v3 license**; the repository is source-available and should not be described as open-source until a license is added.</sub>
