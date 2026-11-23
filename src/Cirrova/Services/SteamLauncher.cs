@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 public static class SteamLauncher
 {

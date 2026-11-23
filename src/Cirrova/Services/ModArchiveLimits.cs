@@ -1,4 +1,4 @@
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>
 /// User-selected ZIPs may be large modpacks. Keep bounded limits to defend against

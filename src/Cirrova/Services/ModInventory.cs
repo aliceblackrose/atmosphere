@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using Atmosphere.Models;
+using Cirrova.Models;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>Read-only inventory of immediate modlet directories. No game files are changed.</summary>
 public static class ModInventory

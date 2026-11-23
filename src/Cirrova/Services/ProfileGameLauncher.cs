@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>Runs a selected game copy with per-profile save and mod data.</summary>
 public sealed class ProfileGameLauncher

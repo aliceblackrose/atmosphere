@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>Checks ZIP metadata budgets before ZipArchive materializes its entry list.</summary>
 internal static class ZipMetadataBudget

@@ -1,7 +1,7 @@
 using System.Text.Json;
-using Atmosphere.Models;
+using Cirrova.Models;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 public sealed class LauncherSettingsStore
 {

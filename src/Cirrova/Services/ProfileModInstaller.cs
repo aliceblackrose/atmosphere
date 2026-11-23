@@ -1,8 +1,8 @@
 using System.IO.Compression;
 using System.Text.RegularExpressions;
-using Atmosphere.Models;
+using Cirrova.Models;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>
 /// Installs current-format modlets ONLY under the application's profile workspace.

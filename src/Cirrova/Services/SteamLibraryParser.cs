@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>
 /// Reads the explicit "path" properties from Steam's current libraryfolders.vdf format.

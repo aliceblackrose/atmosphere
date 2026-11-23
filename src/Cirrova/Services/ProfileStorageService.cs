@@ -1,9 +1,9 @@
-using Atmosphere.Models;
+using Cirrova.Models;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>
-/// Deletes only directories owned by Atmosphere under a selected profile.
+/// Deletes only directories owned by Cirrova under a selected profile.
 /// Paths are generated from validated profile IDs; supplied GameDirectory is never
 /// treated as an owned path. Junctions and symbolic links are rejected before deletion.
 /// </summary>
@@ -110,7 +110,7 @@ public sealed class ProfileStorageService
         var directory = Path.GetFullPath(Path.Combine(root, category, profileId));
         var expectedParent = Path.Combine(root, category);
         if (!SamePath(Path.GetDirectoryName(directory)!, expectedParent))
-            throw new IOException("Profile directory escapes Atmosphere storage.");
+            throw new IOException("Profile directory escapes Cirrova storage.");
         CheckRoot(directory, category);
         return directory;
     }
