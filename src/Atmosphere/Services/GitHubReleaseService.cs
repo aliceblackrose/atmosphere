@@ -15,12 +15,25 @@ public sealed class GitHubReleaseService
     private const long MaxMetadata = 2L * 1024 * 1024;
     private static readonly HttpClient SharedClient = NewClient();
     private readonly HttpClient _client;
+    private readonly TimeSpan _metadataTimeout;
+    private readonly TimeSpan _downloadTimeout;
 
-    public GitHubReleaseService(HttpClient? client = null) => _client = client ?? SharedClient;
+    public GitHubReleaseService(HttpClient? client = null, TimeSpan? metadataTimeout = null,
+        TimeSpan? downloadTimeout = null)
+    {
+        _client = client ?? SharedClient;
+        _metadataTimeout = metadataTimeout ?? TimeSpan.FromSeconds(30);
+        _downloadTimeout = downloadTimeout ?? TimeSpan.FromMinutes(45);
+        static bool ValidTimeout(TimeSpan value) =>
+            value > TimeSpan.Zero && value.TotalMilliseconds <= uint.MaxValue - 1;
+        if (!ValidTimeout(_metadataTimeout)) throw new ArgumentOutOfRangeException(nameof(metadataTimeout));
+        if (!ValidTimeout(_downloadTimeout)) throw new ArgumentOutOfRangeException(nameof(downloadTimeout));
+    }
 
     private static HttpClient NewClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(45) };
+        // Explicit operation deadlines below cover headers and the streamed response body.
+        var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
@@ -48,8 +61,12 @@ public sealed class GitHubReleaseService
         return owner + "/" + repo;
     }
 
-    public async Task<IReadOnlyList<GitHubCatalogEntry>> SearchCatalogAsync(
-        string keywords, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<GitHubCatalogEntry>> SearchCatalogAsync(
+        string keywords, CancellationToken cancellationToken = default) =>
+        WithDeadlineAsync(token => SearchCatalogCoreAsync(keywords, token), _metadataTimeout, cancellationToken);
+
+    private async Task<IReadOnlyList<GitHubCatalogEntry>> SearchCatalogCoreAsync(
+        string keywords, CancellationToken cancellationToken)
     {
         var search = keywords.Trim();
         if (search.Length is < 2 or > 90)
@@ -91,8 +108,10 @@ public sealed class GitHubReleaseService
         return results;
     }
 
-    public async Task<GitHubRelease> GetLatestAsync(string githubUrl,
-        CancellationToken cancellationToken = default)
+    public Task<GitHubRelease> GetLatestAsync(string githubUrl, CancellationToken cancellationToken = default) =>
+        WithDeadlineAsync(token => GetLatestCoreAsync(githubUrl, token), _metadataTimeout, cancellationToken);
+
+    private async Task<GitHubRelease> GetLatestCoreAsync(string githubUrl, CancellationToken cancellationToken)
     {
         var repository = ParseRepository(githubUrl);
         using var request = new HttpRequestMessage(HttpMethod.Get,
@@ -135,9 +154,14 @@ public sealed class GitHubReleaseService
             assets);
     }
 
-    public async Task<DownloadResult> DownloadZipAsync(GitHubReleaseAsset asset,
+    public Task<DownloadResult> DownloadZipAsync(GitHubReleaseAsset asset,
         string destinationDirectory, IProgress<long>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        WithDeadlineAsync(token => DownloadZipCoreAsync(asset, destinationDirectory, progress, token),
+            _downloadTimeout, cancellationToken);
+
+    private async Task<DownloadResult> DownloadZipCoreAsync(GitHubReleaseAsset asset,
+        string destinationDirectory, IProgress<long>? progress, CancellationToken cancellationToken)
     {
         if (!IsAllowedAssetUrl(asset.Repository, asset.DownloadUrl) ||
             !asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
@@ -146,6 +170,7 @@ public sealed class GitHubReleaseService
 
         Directory.CreateDirectory(destinationDirectory);
         var path = Path.Combine(destinationDirectory, Guid.NewGuid().ToString("N") + ".zip");
+        var created = false;
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, asset.DownloadUrl);
@@ -158,6 +183,7 @@ public sealed class GitHubReleaseService
             await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
             await using var output = new FileStream(path, FileMode.CreateNew,
                 FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            created = true;
             using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
             var bytes = await CopyLimitedAsync(input, output, MaxDownload,
@@ -166,11 +192,19 @@ public sealed class GitHubReleaseService
                     digest.AppendData(buffer, 0, n);
                     progress?.Report(total);
                 }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (bytes != asset.Size)
+                throw new InvalidDataException("Download size differs from the selected GitHub asset.");
             return new DownloadResult(path, Convert.ToHexString(digest.GetHashAndReset()), bytes);
         }
         catch
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (created)
+            {
+                try { File.Delete(path); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                { /* Do not hide the original download error. */ }
+            }
             throw;
         }
     }
@@ -187,19 +221,39 @@ public sealed class GitHubReleaseService
             StringComparison.OrdinalIgnoreCase);
     }
 
+    private static async Task<T> WithDeadlineAsync<T>(Func<CancellationToken, Task<T>> operation,
+        TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(timeout);
+        try
+        {
+            deadline.Token.ThrowIfCancellationRequested();
+            return await operation(deadline.Token);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException("The GitHub request timed out. Try again.", ex);
+        }
+    }
+
     private static async Task<long> CopyLimitedAsync(Stream input, Stream output, long limit,
         Action<byte[], int, long>? onChunk, CancellationToken token)
     {
         var buffer = new byte[81920];
         long total = 0;
-        int count;
-        while ((count = await input.ReadAsync(buffer, token)) > 0)
+        using var readDeadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        while (true)
         {
+            readDeadline.CancelAfter(TimeSpan.FromMinutes(1));
+            var count = await input.ReadAsync(buffer, readDeadline.Token);
+            readDeadline.CancelAfter(Timeout.InfiniteTimeSpan);
+            readDeadline.Token.ThrowIfCancellationRequested();
+            if (count == 0) return total;
             total += count;
             if (total > limit) throw new InvalidDataException("Input exceeds configured size limit.");
             await output.WriteAsync(buffer.AsMemory(0, count), token);
             onChunk?.Invoke(buffer, count, total);
         }
-        return total;
     }
 }

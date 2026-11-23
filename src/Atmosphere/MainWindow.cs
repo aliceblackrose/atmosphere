@@ -39,7 +39,7 @@ public partial class MainWindow : Window
     private List<(ModRecord Mod, bool Disabled)> _modRows = new();
     private GitHubRelease? _currentRelease;
     private IReadOnlyList<GitHubCatalogEntry> _catalogRows = Array.Empty<GitHubCatalogEntry>();
-    private CancellationTokenSource? _downloadToken;
+    private CancellationTokenSource? _githubToken;
     private CancellationTokenSource? _copyToken;
     private bool _busy;
 
@@ -707,9 +707,12 @@ public partial class MainWindow : Window
             var replace = _replace.IsChecked == true;
             var installedNames = new List<string>();
             var failures = new List<string>();
+            var sourceWarnings = new List<string>();
+            var index = 0;
             _busy = true;
             foreach (var selected in files)
             {
+                index++;
                 var path = selected.TryGetLocalPath();
                 var filename = path is null ? selected.Name : Path.GetFileName(path);
                 try
@@ -717,13 +720,17 @@ public partial class MainWindow : Window
                     if (string.IsNullOrWhiteSpace(path))
                         throw new InvalidOperationException("Choose a locally accessible ZIP file.");
 
-                    Report("Installing " + filename + " (" + (installedNames.Count + failures.Count + 1) +
+                    Report("Installing " + filename + " (" + index +
                         "/" + files.Count + ")...");
                     // Each ZIP is validated and rolled back independently. Earlier successful
                     // ZIPs are retained if a later archive fails; report every failure.
                     var installed = await Task.Run(() => _installer.InstallZip(p.Id, path, replace));
-                    _sources.Forget(p.Id, installed.Select(x => x.Name));
                     installedNames.AddRange(installed.Select(x => x.DisplayName));
+                    try { _sources.Forget(p.Id, installed.Select(x => x.Name)); }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+                    {
+                        sourceWarnings.Add(filename + ": " + ex.Message);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -736,7 +743,11 @@ public partial class MainWindow : Window
                 files.Count + " ZIP(s)." +
                 (failures.Count == 0 ? "" :
                     " Failed ZIP(s): " + string.Join(" | ", failures.Take(3)) +
-                    (failures.Count > 3 ? $" (and {failures.Count - 3} more)" : "")));
+                    (failures.Count > 3 ? $" (and {failures.Count - 3} more)" : "")) +
+                (sourceWarnings.Count == 0 ? "" :
+                    " Installed, but could not update source history for: " +
+                    string.Join(" | ", sourceWarnings.Take(3)) +
+                    (sourceWarnings.Count > 3 ? $" (and {sourceWarnings.Count - 3} more)" : "")));
         }
         catch (Exception ex) { Error("Could not select mod ZIPs", ex); }
         finally { _busy = false; }
@@ -799,19 +810,23 @@ public partial class MainWindow : Window
     private async void OnCatalogSearchClick(object? sender, RoutedEventArgs e)
     {
         if (_busy) return;
-        _busy = true;
+        var token = BeginGitHubOperation("Cancel search");
         try
         {
             Report("Searching public GitHub repositories...");
-            _catalogRows = await _github.SearchCatalogAsync(_catalogSearch.Text ?? "");
+            _catalogRows = await _github.SearchCatalogAsync(_catalogSearch.Text ?? "", token);
             _catalogList.ItemsSource = _catalogRows
                 .Select(x => x.Repository + "  ★" + x.Stars + "  — " + x.Description)
                 .DefaultIfEmpty("No matching GitHub repositories.").ToArray();
             _catalogList.SelectedIndex = _catalogRows.Count > 0 ? 0 : -1;
             Report("Found " + _catalogRows.Count + " public repositories. Verify each author before installing.");
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            Report("GitHub repository search cancelled.");
+        }
         catch (Exception ex) { Error("GitHub repository search failed", ex); }
-        finally { _busy = false; }
+        finally { EndGitHubOperation(); }
     }
 
     private void OnUseCatalogResultClick(object? sender, RoutedEventArgs e)
@@ -825,11 +840,13 @@ public partial class MainWindow : Window
     private async void OnCheckReleaseClick(object? sender, RoutedEventArgs e)
     {
         if (_busy) return;
+        var token = BeginGitHubOperation("Cancel release check");
         try
         {
-            _busy = true;
+            _currentRelease = null;
+            _assetsList.ItemsSource = Array.Empty<string>();
             _releaseInfo.Text = "Checking GitHub for the latest release...";
-            _currentRelease = await _github.GetLatestAsync(_githubUrl.Text ?? "");
+            _currentRelease = await _github.GetLatestAsync(_githubUrl.Text ?? "", token);
             _releaseInfo.Text = _currentRelease.Repository + " • " + _currentRelease.Tag +
                 "\n" + _currentRelease.Title +
                 "\n" + _currentRelease.Description;
@@ -839,6 +856,11 @@ public partial class MainWindow : Window
             _assetsList.SelectedIndex = _currentRelease.ZipAssets.Count > 0 ? 0 : -1;
             Report("GitHub release metadata loaded. No files have been downloaded.");
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            _releaseInfo.Text = "Release check cancelled.";
+            Report("GitHub release check cancelled.");
+        }
         catch (Exception ex)
         {
             _currentRelease = null;
@@ -846,7 +868,7 @@ public partial class MainWindow : Window
             Error("Could not check GitHub releases", ex);
             _releaseInfo.Text = "Unable to read latest release.";
         }
-        finally { _busy = false; }
+        finally { EndGitHubOperation(); }
     }
 
     private void OnReleaseAssetSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -869,10 +891,9 @@ public partial class MainWindow : Window
         }
 
         string? downloadedFile = null;
-        _busy = true;
-        _downloadToken = new CancellationTokenSource();
-        _cancelButton.IsEnabled = true;
-        _downloadButton.IsEnabled = false;
+        var replace = _replace.IsChecked == true;
+        var releaseTag = _currentRelease?.Tag ?? "";
+        var token = BeginGitHubOperation("Cancel download");
         _progress.Value = 0;
         try
         {
@@ -882,23 +903,31 @@ public partial class MainWindow : Window
                 _onlineStatus.Text = "Downloaded " + (bytes / 1048576.0).ToString("F1") + " MiB...";
             });
             var downloads = Path.Combine(_profiles.DataRoot, "downloads");
-            var result = await _github.DownloadZipAsync(asset, downloads, progress, _downloadToken.Token);
+            var result = await _github.DownloadZipAsync(asset, downloads, progress, token);
             downloadedFile = result.FilePath;
+            token.ThrowIfCancellationRequested();
             _onlineStatus.Text = "Download complete. SHA-256: " + result.Sha256 +
                 "\nValidating and installing...";
             _cancelButton.IsEnabled = false; // Install phase is not cancellable.
-            var replace = _replace.IsChecked == true;
             var installed = await Task.Run(() =>
                 _installer.InstallZip(p.Id, downloadedFile, replace));
-            _sources.Record(p.Id, installed.Select(x => x.Name), asset.Repository,
-                _currentRelease?.Tag ?? "", asset.Name, result.Sha256);
+            string? sourceWarning = null;
+            try
+            {
+                _sources.Record(p.Id, installed.Select(x => x.Name), asset.Repository,
+                    releaseTag, asset.Name, result.Sha256);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                sourceWarning = "Installed, but could not save source history: " + ex.Message;
+            }
             RefreshMods();
             _progress.Value = 100;
             _onlineStatus.Text = "Installed: " + string.Join(", ", installed.Select(x => x.DisplayName)) +
-                "\nSHA-256: " + result.Sha256;
-            Report("Downloaded and installed " + installed.Count + " modlet(s) in " + p.Name + ".");
+                "\nSHA-256: " + result.Sha256 + (sourceWarning is null ? "" : "\n" + sourceWarning);
+            Report(sourceWarning ?? ("Downloaded and installed " + installed.Count + " modlet(s) in " + p.Name + "."));
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
             _onlineStatus.Text = "Download cancelled. No mod changes made.";
             Report("Download cancelled.");
@@ -909,16 +938,33 @@ public partial class MainWindow : Window
             if (downloadedFile is not null && File.Exists(downloadedFile))
             {
                 try { File.Delete(downloadedFile); }
-                catch (IOException) { /* A temporary download can be deleted manually. */ }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                { /* A temporary download can be deleted manually. */ }
             }
-            _downloadToken?.Dispose();
-            _downloadToken = null;
-            _busy = false;
-            _cancelButton.IsEnabled = false;
-            _downloadButton.IsEnabled = true;
+            EndGitHubOperation();
         }
     }
 
+    private CancellationToken BeginGitHubOperation(string cancelLabel)
+    {
+        _busy = true;
+        _githubToken = new CancellationTokenSource();
+        _cancelButton.Content = cancelLabel;
+        _cancelButton.IsEnabled = true;
+        _downloadButton.IsEnabled = false;
+        return _githubToken.Token;
+    }
+
+    private void EndGitHubOperation()
+    {
+        _githubToken?.Dispose();
+        _githubToken = null;
+        _busy = false;
+        _cancelButton.Content = "Cancel download";
+        _cancelButton.IsEnabled = false;
+        _downloadButton.IsEnabled = true;
+    }
+
     private void OnCancelDownloadClick(object? sender, RoutedEventArgs e) =>
-        _downloadToken?.Cancel();
+        _githubToken?.Cancel();
 }

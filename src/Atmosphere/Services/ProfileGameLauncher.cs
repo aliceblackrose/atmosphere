@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Atmosphere.Models;
 
 namespace Atmosphere.Services;
 
@@ -7,12 +6,10 @@ namespace Atmosphere.Services;
 public sealed class ProfileGameLauncher
 {
     private readonly ProfileStore _profiles;
-    private readonly ProfileModInstaller _installer;
 
     public ProfileGameLauncher(ProfileStore profiles)
     {
         _profiles = profiles;
-        _installer = new ProfileModInstaller(profiles);
     }
 
     public ProcessStartInfo BuildStartInfo(string profileId, string? defaultGameDirectory, bool noEac)
@@ -22,9 +19,14 @@ public sealed class ProfileGameLauncher
         if (!GameLocator.IsValidGameDirectory(gameDirectory))
             throw new InvalidOperationException("Select a valid game installation before launching a profile.");
 
-        var codeMods = _installer.Installed(profileId).Where(mod => mod.ContainsDll).ToArray();
-        if (codeMods.Length > 0 && !noEac)
-            throw new InvalidOperationException("This profile contains DLL mods. Select 'Launch without EAC' to proceed.");
+        var profileDirectory = _profiles.GetDirectory(profileId);
+        RequireUnlinkedDirectory(profileDirectory, allowMissing: false);
+        var profileMods = Path.Combine(profileDirectory, "Mods");
+        RequireUnlinkedDirectory(profileMods, allowMissing: true);
+
+        if (!noEac && (ContainsDll(profileMods) || ContainsDll(Path.Combine(gameDirectory!, "Mods"))))
+            throw new InvalidOperationException(
+                "The profile or game folder contains DLL mods. Select 'Launch without EAC' to proceed.");
 
         var exe = FindGameExecutable(gameDirectory!);
         var info = new ProcessStartInfo(exe)
@@ -32,7 +34,7 @@ public sealed class ProfileGameLauncher
             WorkingDirectory = gameDirectory!,
             UseShellExecute = false
         };
-        info.ArgumentList.Add("-UserDataFolder=" + _profiles.GetDirectory(profileId));
+        info.ArgumentList.Add("-UserDataFolder=" + profileDirectory);
         if (noEac) info.ArgumentList.Add("-noeac");
         return info;
     }
@@ -43,6 +45,54 @@ public sealed class ProfileGameLauncher
         Directory.CreateDirectory(Path.Combine(_profiles.GetDirectory(profileId), "Mods"));
         return Process.Start(info) ??
             throw new InvalidOperationException("The game process could not be started.");
+    }
+
+    private static bool RequireUnlinkedDirectory(string path, bool allowMissing)
+    {
+        FileAttributes attributes;
+        try
+        {
+            attributes = File.GetAttributes(path);
+        }
+        catch (IOException ex) when (allowMissing && ex is (FileNotFoundException or DirectoryNotFoundException))
+        {
+            return false;
+        }
+
+        if ((attributes & FileAttributes.ReparsePoint) != 0 || (attributes & FileAttributes.Directory) == 0)
+            throw new IOException("Expected a regular directory at: " + path);
+        return true;
+    }
+
+    private static bool ContainsDll(string modsDirectory)
+    {
+        try
+        {
+            if (!RequireUnlinkedDirectory(modsDirectory, allowMissing: true))
+                return false;
+
+            var pending = new Stack<string>();
+            pending.Push(modsDirectory);
+            while (pending.TryPop(out var directory))
+            {
+                foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+                {
+                    var attributes = File.GetAttributes(entry);
+                    if ((attributes & FileAttributes.ReparsePoint) != 0)
+                        throw new IOException("Linked mod files and directories cannot be checked: " + entry);
+                    if ((attributes & FileAttributes.Directory) != 0)
+                        pending.Push(entry);
+                    else if (string.Equals(Path.GetExtension(entry), ".dll", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+            return false;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            throw new InvalidOperationException(
+                "Could not verify mods for a normal launch. Check the mod folders before proceeding: " + ex.Message, ex);
+        }
     }
 
     public static string FindGameExecutable(string directory)
