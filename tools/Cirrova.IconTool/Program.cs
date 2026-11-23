@@ -3,7 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Reflection.PortableExecutable;
 
-namespace Atmosphere.IconTool;
+namespace Cirrova.IconTool;
 
 internal static class Program
 {
@@ -15,11 +15,11 @@ internal static class Program
         try
         {
             if (args.Length == 0 || args.Length > 2)
-                throw new ArgumentException("Usage: dotnet run --project tools/Atmosphere.IconTool -- create|verify [exe]");
+                throw new ArgumentException("Usage: dotnet run --project tools/Cirrova.IconTool -- create|verify [exe]");
 
             if (args[0] == "create" && args.Length == 1) Create();
             else if (args[0] == "verify") Verify(args.Length == 2
-                ? args[1] : "out/atmosphere-win-x64/Atmosphere.exe");
+                ? args[1] : "out/cirrova-win-x64/Cirrova.exe");
             else throw new ArgumentException("Expected create or verify [exe].");
             return 0;
         }
@@ -33,7 +33,7 @@ internal static class Program
     private static void Create()
     {
         const string source = "icon.png";
-        const string destination = "src/Atmosphere/Assets/Atmosphere.ico";
+        const string destination = "src/Cirrova/Assets/Cirrova.ico";
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 
         using var original = Image.FromFile(source);

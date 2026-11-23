@@ -1,7 +1,7 @@
-using Atmosphere.Services;
+using Cirrova.Services;
 using Xunit;
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class SteamLibraryParserTests
 {

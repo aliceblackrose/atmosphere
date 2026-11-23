@@ -2,12 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
-using Atmosphere;
+using Cirrova;
 using Xunit;
 
-[assembly: AvaloniaTestApplication(typeof(Atmosphere.Tests.TestAppBuilder))]
+[assembly: AvaloniaTestApplication(typeof(Cirrova.Tests.TestAppBuilder))]
 
-namespace Atmosphere.Tests;
+namespace Cirrova.Tests;
 
 public sealed class TestAppBuilder
 {
