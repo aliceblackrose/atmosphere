@@ -63,7 +63,7 @@ public partial class MainWindow
         n7.Spacing = 3;
         n4.Children.Add(n7);
         var n8 = new TextBlock();
-        n8.Text = "ATMOSPHERE";
+        n8.Text = "CIRROVA";
         n8.FontSize = 21;
         n8.FontWeight = FontWeight.Bold;
         n8.LetterSpacing = 2;
@@ -1143,7 +1143,7 @@ public partial class MainWindow
         n234.Children.Add(n236);
         var n237 = new TextBlock();
         Grid.SetColumn(n237, 2);
-        n237.Text = "ATMOSPHERE • COMMUNITY PREVIEW";
+        n237.Text = "CIRROVA • COMMUNITY PREVIEW";
         n237.FontSize = 10;
         n237.Foreground = Brush.Parse("#8393AE");
         n237.VerticalAlignment = VerticalAlignment.Center;
