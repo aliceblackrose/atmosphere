@@ -1,7 +1,7 @@
 using System.IO;
-using Atmosphere.Services;
+using Cirrova.Services;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 public sealed record GameCopyProgress(long BytesCopied, long TotalBytes);
 

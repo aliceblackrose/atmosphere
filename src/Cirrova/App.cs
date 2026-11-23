@@ -6,7 +6,7 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 
-namespace Atmosphere;
+namespace Cirrova;
 
 public partial class App : Application
 {

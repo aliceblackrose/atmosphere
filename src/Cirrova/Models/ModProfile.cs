@@ -1,4 +1,4 @@
-namespace Atmosphere.Models;
+namespace Cirrova.Models;
 
 /// <summary>A profile's working data and mods live outside the Steam game directory.</summary>
 public sealed record ModProfile

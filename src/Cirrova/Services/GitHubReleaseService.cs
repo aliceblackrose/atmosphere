@@ -1,9 +1,9 @@
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
-using Atmosphere.Models;
+using Cirrova.Models;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 /// <summary>
 /// Explicit, opt-in GitHub Releases lookup. No network operation occurs at startup.
@@ -34,7 +34,7 @@ public sealed class GitHubReleaseService
     {
         // Explicit operation deadlines below cover headers and the streamed response body.
         var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Cirrova-ModLauncher/1.0");
         client.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         return client;
@@ -76,7 +76,7 @@ public sealed class GitHubReleaseService
         using var request = new HttpRequestMessage(HttpMethod.Get,
             "https://api.github.com/search/repositories?q=" + query +
             "&sort=stars&order=desc&per_page=20");
-        request.Headers.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
+        request.Headers.UserAgent.ParseAdd("Cirrova-ModLauncher/1.0");
         using var response = await _client.SendAsync(
             request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -116,7 +116,7 @@ public sealed class GitHubReleaseService
         var repository = ParseRepository(githubUrl);
         using var request = new HttpRequestMessage(HttpMethod.Get,
             "https://api.github.com/repos/" + repository + "/releases/latest");
-        request.Headers.UserAgent.ParseAdd("Atmosphere-ModLauncher/1.0");
+        request.Headers.UserAgent.ParseAdd("Cirrova-ModLauncher/1.0");
         using var response = await _client.SendAsync(
             request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();

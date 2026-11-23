@@ -2,13 +2,13 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Atmosphere.Models;
-using Atmosphere.Services;
+using Cirrova.Models;
+using Cirrova.Services;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 
-namespace Atmosphere;
+namespace Cirrova;
 
 public partial class MainWindow : Window
 {
@@ -600,7 +600,7 @@ public partial class MainWindow : Window
             var confirmed = await ConfirmPermanentDeleteAsync(
                 "Permanently delete profile?", p.Name,
                 "Permanently removes the selected profile, its Mods, Saves, GeneratedWorlds, Backups, " +
-                "and any owned GameCopy. This action cannot be undone. Only Atmosphere's profile folder is deleted; " +
+                "and any owned GameCopy. This action cannot be undone. Only Cirrova's profile folder is deleted; " +
                 "your Steam game installation is never deleted. Close the game first.");
             if (!confirmed) return;
             await Task.Run(() => _storage.DeleteProfile(p.Id));

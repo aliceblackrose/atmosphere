@@ -7,7 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 
-namespace Atmosphere;
+namespace Cirrova;
 
 // Generated from the original UI layout: entirely C# controls, not XAML-loaded markup.
 public partial class MainWindow
@@ -15,12 +15,12 @@ public partial class MainWindow
     private readonly System.Collections.Generic.Dictionary<string, Control> _namedControls = new();
 
     private static Bitmap LoadArtwork() =>
-        new(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Atmosphere/Assets/icon.png")));
+        new(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Cirrova/Assets/icon.png")));
 
     private void BuildInterface()
     {
-        this.Title = "Atmosphere  •  7 Days to Die Mod Launcher";
-        this.Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Atmosphere/Assets/icon.png")));
+        this.Title = "Cirrova  •  7 Days to Die Mod Launcher";
+        this.Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Cirrova/Assets/icon.png")));
         this.Width = 1320;
         this.Height = 860;
         this.MinWidth = 980;
@@ -146,7 +146,7 @@ public partial class MainWindow
         n22.Children.Add(n23);
         var n24 = new TextBlock();
         n24.Classes.Add("page-title");
-        n24.Text = "Welcome to Atmosphere";
+        n24.Text = "Welcome to Cirrova";
         n22.Children.Add(n24);
         var n25 = new TextBlock();
         n25.Classes.Add("muted");
@@ -422,7 +422,7 @@ public partial class MainWindow
         n78.Children.Add(n80);
         var n81 = new TextBlock();
         n81.Classes.Add("muted");
-        n81.Text = "Connect a Steam installation or a separate copy. Atmosphere never writes modlets to the original game folder.";
+        n81.Text = "Connect a Steam installation or a separate copy. Cirrova never writes modlets to the original game folder.";
         n78.Children.Add(n81);
         var n82 = new Border();
         n82.Classes.Add("panel");
@@ -765,7 +765,7 @@ public partial class MainWindow
         n156.Children.Add(n157);
         var n158 = new TextBlock();
         n158.Classes.Add("muted");
-        n158.Text = "Inspect disk usage and remove Atmosphere-managed files.";
+        n158.Text = "Inspect disk usage and remove Cirrova-managed files.";
         n156.Children.Add(n158);
         var n159 = new Button();
         Grid.SetColumn(n159, 1);

@@ -1,4 +1,4 @@
-namespace Atmosphere.Models;
+namespace Cirrova.Models;
 
 public sealed record ModRecord(
     string FolderName,

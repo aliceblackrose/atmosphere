@@ -1,4 +1,4 @@
-namespace Atmosphere.Models;
+namespace Cirrova.Models;
 
 /// <summary>Informational download provenance, not a publisher identity guarantee.</summary>
 public sealed record ModSource(

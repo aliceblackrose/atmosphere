@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace Atmosphere.Services;
+namespace Cirrova.Services;
 
 public sealed class GameLocator
 {
