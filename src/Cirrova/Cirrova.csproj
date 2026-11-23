@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Cirrova</AssemblyName>
+    <RootNamespace>Cirrova</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64' And Exists('Assets/Cirrova.ico')">
+    <!-- Generates a real Windows Explorer/taskbar executable icon in release packages. -->
+    <ApplicationIcon>Assets/Cirrova.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <!-- Source artwork is kept in the repository root; link it into Avalonia's resource bundle. -->
+    <AvaloniaResource Include="../../icon.png" Link="Assets/icon.png" />
+  </ItemGroup>
+</Project>

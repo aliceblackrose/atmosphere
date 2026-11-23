@@ -16,7 +16,7 @@
 # Packaging
 artifacts/
 publish/
-src/Atmosphere/Assets/Atmosphere.ico
+src/Cirrova/Assets/Cirrova.ico
 
 # OS files
 .DS_Store
