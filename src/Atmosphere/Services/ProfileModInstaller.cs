@@ -24,19 +24,13 @@ public sealed class ProfileModInstaller
 
     private string GetSafeDirectory(string profileId)
     {
+        // DataRoot is the configured trust boundary. Do not follow links inside it.
+        EnsureManagedDirectory(_profiles.DataRoot);
+        EnsureManagedDirectory(Path.Combine(_profiles.DataRoot, "profiles"));
         var profile = _profiles.GetDirectory(profileId);
-        // Do not follow an externally replaced Mods, backup, or staging symlink.
-        if (!Directory.Exists(profile) ||
-            (File.GetAttributes(profile) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException("Profile workspace is missing or linked to another location.");
-
+        EnsureManagedDirectory(profile);
         foreach (var child in new[] { "Mods", "DisabledMods", "Backups", ".staging" })
-        {
-            var path = Path.Combine(profile, child);
-            if (Directory.Exists(path) &&
-                (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException("Linked profile directories are not supported: " + child);
-        }
+            EnsureManagedDirectory(Path.Combine(profile, child), allowMissing: true);
         return profile;
     }
 
@@ -49,13 +43,15 @@ public sealed class ProfileModInstaller
     public IReadOnlyList<ModRecord> InstallZip(string profileId, string zipPath, bool replaceExisting = false)
     {
         var profileRoot = GetSafeDirectory(profileId);
-        if (!File.Exists(zipPath)) throw new FileNotFoundException("ZIP archive not found.", zipPath);
-        var zipBytes = new FileInfo(zipPath).Length;
+        using var zipFile = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var zipBytes = zipFile.Length;
         if (zipBytes > _limits.MaxArchiveBytes)
             throw new InvalidDataException(
                 $"ZIP size ({zipBytes / ModArchiveLimits.GiB:F2} GiB) exceeds the " +
                 $"{_limits.MaxArchiveBytes / ModArchiveLimits.GiB:F2} GiB safety limit. " +
                 "Split the modpack into smaller ZIPs.");
+
+        ZipMetadataBudget.Validate(zipFile, _limits.MaxEntries);
 
         var staging = Path.Combine(profileRoot, ".staging", Guid.NewGuid().ToString("N"));
         var expanded = Path.Combine(staging, "expanded");
@@ -66,7 +62,7 @@ public sealed class ProfileModInstaller
 
         try
         {
-            ExtractValidated(zipPath, expanded);
+            ExtractValidated(zipFile, expanded);
 
             var modRoots = Directory.EnumerateFiles(expanded, "ModInfo.xml", new EnumerationOptions
             {
@@ -78,39 +74,43 @@ public sealed class ProfileModInstaller
             if (modRoots.Length == 0)
                 throw new InvalidDataException("ZIP contains no modlet with ModInfo.xml.");
 
+            RejectOverlappingRoots(modRoots, expanded);
             var mods = modRoots.Select(ModInventory.ReadMod).ToArray();
             var conflicts = mods.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
                 .Where(x => x.Count() > 1).ToArray();
             if (conflicts.Length > 0 || mods.Any(x => !x.IsValid))
                 throw new InvalidDataException("ZIP has duplicate IDs, legacy metadata, or invalid ModInfo.xml.");
 
+            var disabledRoot = Path.Combine(profileRoot, "DisabledMods");
+            var enabledPaths = IndexModPaths(modsRoot);
+            var disabledPaths = IndexModPaths(disabledRoot);
+            var replacementRoot = Path.Combine(profileRoot, "Backups", "Replaced");
+            var plan = new List<(ModRecord Mod, string Target, bool Replace)>(mods.Length);
             foreach (var mod in mods)
             {
-                if (!SafeFolder.IsMatch(mod.Name))
-                    throw new InvalidDataException("Invalid internal mod Name.");
-                var target = Path.Combine(modsRoot, mod.Name);
-                var disabled = Path.Combine(profileRoot, "DisabledMods", mod.Name);
-                if (Directory.Exists(disabled))
+                ValidateInternalName(mod.Name);
+                if (disabledPaths.ContainsKey(mod.Name))
                     throw new IOException("Mod is already installed but disabled: " + mod.Name);
-                if (Directory.Exists(target) && !replaceExisting)
-                    throw new IOException("Mod is already installed: " + mod.Name);
-
-                // Never follow or replace a directory link in an existing profile.
-                if (Directory.Exists(target) &&
-                    (File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
-                    throw new IOException("Refusing to overwrite a linked mod directory.");
+                var existing = FindModPath(enabledPaths, mod.Name);
+                if (existing is not null)
+                {
+                    if (!replaceExisting)
+                        throw new IOException("Mod is already installed: " + mod.Name);
+                    EnsureManagedDirectory(existing);
+                    EnsureManagedDirectory(replacementRoot, allowMissing: true);
+                }
+                plan.Add((mod, existing ?? Path.Combine(modsRoot, mod.Name), existing is not null));
             }
 
             Directory.CreateDirectory(modsRoot);
-            foreach (var mod in mods)
+            foreach (var (mod, target, replace) in plan)
             {
-                var target = Path.Combine(modsRoot, mod.Name);
                 string? backup = null;
-                if (Directory.Exists(target))
+                if (replace)
                 {
-                    backup = Path.Combine(profileRoot, "Backups", "Replaced",
+                    backup = Path.Combine(replacementRoot,
                         DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + "-" + Guid.NewGuid().ToString("N"),
-                        mod.Name);
+                        Path.GetFileName(target));
                     Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
                     Directory.Move(target, backup);
                 }
@@ -153,10 +153,12 @@ public sealed class ProfileModInstaller
     {
         ValidateInternalName(internalId);
         var root = GetSafeDirectory(profileId);
-        var from = Path.Combine(root, enabled ? "DisabledMods" : "Mods", internalId);
-        var to = Path.Combine(root, enabled ? "Mods" : "DisabledMods", internalId);
-        EnsureManagedDirectory(from);
-        if (Directory.Exists(to)) throw new IOException("Target mod folder already exists.");
+        var fromRoot = Path.Combine(root, enabled ? "DisabledMods" : "Mods");
+        var toRoot = Path.Combine(root, enabled ? "Mods" : "DisabledMods");
+        var from = GetExistingModPath(fromRoot, internalId);
+        var to = Path.Combine(toRoot, Path.GetFileName(from));
+        if (IndexModPaths(toRoot).ContainsKey(internalId))
+            throw new IOException("Target mod folder already exists.");
         Directory.CreateDirectory(Path.GetDirectoryName(to)!);
         Directory.Move(from, to);
     }
@@ -165,11 +167,12 @@ public sealed class ProfileModInstaller
     {
         ValidateInternalName(internalId);
         var root = GetSafeDirectory(profileId);
-        var from = Path.Combine(root, disabled ? "DisabledMods" : "Mods", internalId);
-        EnsureManagedDirectory(from);
-        var backup = Path.Combine(root, "Backups", "Removed",
+        var from = GetExistingModPath(Path.Combine(root, disabled ? "DisabledMods" : "Mods"), internalId);
+        var removalRoot = Path.Combine(root, "Backups", "Removed");
+        EnsureManagedDirectory(removalRoot, allowMissing: true);
+        var backup = Path.Combine(removalRoot,
             DateTime.UtcNow.ToString("yyyyMMddTHHmmssfff") + "-" + Guid.NewGuid().ToString("N"),
-            internalId);
+            Path.GetFileName(from));
         Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
         Directory.Move(from, backup);
         return backup;
@@ -181,16 +184,64 @@ public sealed class ProfileModInstaller
             throw new ArgumentException("Invalid mod folder name.", nameof(name));
     }
 
-    private static void EnsureManagedDirectory(string path)
+    private static void RejectOverlappingRoots(string[] roots, string expanded)
     {
-        if (!Directory.Exists(path)) throw new DirectoryNotFoundException("Mod is not installed: " + path);
-        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException("Refusing to operate on a linked mod directory.");
+        var rootSet = roots.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var root in roots)
+        {
+            if (root.Equals(expanded, StringComparison.OrdinalIgnoreCase)) continue;
+            for (var parent = Path.GetDirectoryName(root); parent is not null; parent = Path.GetDirectoryName(parent))
+            {
+                if (rootSet.Contains(parent))
+                    throw new InvalidDataException("ZIP contains a modlet nested inside another modlet.");
+                if (parent.Equals(expanded, StringComparison.OrdinalIgnoreCase)) break;
+            }
+        }
     }
 
-    private void ExtractValidated(string zipPath, string destination)
+    private static Dictionary<string, string?> IndexModPaths(string root)
     {
-        using var archive = ZipFile.OpenRead(zipPath);
+        var paths = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (Directory.Exists(root))
+        {
+            foreach (var path in Directory.EnumerateFileSystemEntries(root))
+            {
+                var name = Path.GetFileName(path);
+                if (!paths.TryAdd(name, path)) paths[name] = null; // Ambiguous casing.
+            }
+        }
+        return paths;
+    }
+
+    private static string? FindModPath(Dictionary<string, string?> paths, string name)
+    {
+        if (!paths.TryGetValue(name, out var path)) return null;
+        return path ?? throw new IOException("Multiple existing mod paths differ only in casing: " + name);
+    }
+
+    private static string GetExistingModPath(string root, string name)
+    {
+        var path = FindModPath(IndexModPaths(root), name)
+            ?? throw new DirectoryNotFoundException("Mod is not installed: " + name);
+        EnsureManagedDirectory(path);
+        return path;
+    }
+
+    private static void EnsureManagedDirectory(string path, bool allowMissing = false)
+    {
+        FileAttributes attributes;
+        try { attributes = File.GetAttributes(path); }
+        catch (Exception ex) when (allowMissing && ex is (FileNotFoundException or DirectoryNotFoundException))
+        {
+            return;
+        }
+        if ((attributes & FileAttributes.ReparsePoint) != 0 || (attributes & FileAttributes.Directory) == 0)
+            throw new IOException("Managed path must be an unlinked directory: " + path);
+    }
+
+    private void ExtractValidated(Stream zipFile, string destination)
+    {
+        using var archive = new ZipArchive(zipFile, ZipArchiveMode.Read, leaveOpen: true);
         if (archive.Entries.Count > _limits.MaxEntries)
             throw new InvalidDataException(
                 $"Archive contains too many entries (maximum {_limits.MaxEntries:N0}).");
