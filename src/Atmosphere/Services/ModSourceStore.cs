@@ -30,11 +30,17 @@ public sealed class ModSourceStore
         if (sha256.Length != 64 || !sha256.All(Uri.IsHexDigit))
             throw new ArgumentException("SHA-256 must contain 64 hexadecimal characters.");
 
-        var ids = modIds.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        var records = List(profileId).Where(x =>
-            !ids.Contains(x.InternalName, StringComparer.OrdinalIgnoreCase)).ToList();
-        records.AddRange(ids.Select(id => new ModSource(id, repository, releaseTag,
-            assetName, sha256, DateTime.UtcNow)));
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var updates = new List<ModSource>();
+        var installedAt = DateTime.UtcNow;
+        foreach (var id in modIds)
+        {
+            if (!string.IsNullOrWhiteSpace(id) && ids.Add(id))
+                updates.Add(new ModSource(id, repository, releaseTag, assetName, sha256, installedAt));
+        }
+
+        var records = List(profileId).Where(x => !ids.Contains(x.InternalName)).ToList();
+        records.AddRange(updates);
         Write(profileId, records);
     }
 

@@ -22,12 +22,16 @@ public static class ModInventory
             return Array.Empty<ModRecord>();
 
         var results = new List<ModRecord>();
+        var nameCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var directory in Directory.EnumerateDirectories(modsDirectory).OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
         {
             try
             {
                 if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0) continue;
-                results.Add(ReadMod(directory));
+                var mod = ReadMod(directory);
+                results.Add(mod);
+                if (mod.IsValid)
+                    nameCounts[mod.Name] = nameCounts.GetValueOrDefault(mod.Name) + 1;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
             {
@@ -35,11 +39,13 @@ public static class ModInventory
             }
         }
 
-        var duplicates = results.Where(x => x.IsValid).GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
-            .Where(x => x.Count() > 1).SelectMany(x => x).Select(x => x.DirectoryPath)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return results.Select(x => duplicates.Contains(x.DirectoryPath)
-            ? x with { IsValid = false, Warning = "Duplicate internal mod Name in this Mods folder." } : x).ToArray();
+        for (var i = 0; i < results.Count; i++)
+        {
+            var mod = results[i];
+            if (mod.IsValid && nameCounts[mod.Name] > 1)
+                results[i] = mod with { IsValid = false, Warning = "Duplicate internal mod Name in this Mods folder." };
+        }
+        return results.AsReadOnly();
     }
 
     public static ModRecord ReadMod(string directory)
@@ -63,12 +69,14 @@ public static class ModInventory
                 XmlResolver = null,
                 MaxCharactersInDocument = MaxMetadataBytes
             });
-            var xml = XDocument.Load(reader);
-            if (!string.Equals(xml.Root?.Name.LocalName, "xml", StringComparison.OrdinalIgnoreCase))
+            var root = XDocument.Load(reader).Root;
+            if (root is null || !root.Name.LocalName.Equals("xml", StringComparison.OrdinalIgnoreCase))
                 return Invalid(directory, "Invalid ModInfo.xml root.");
 
-            var legacy = xml.Root.Elements().Any(x => x.Name.LocalName.Equals("ModInfo", StringComparison.OrdinalIgnoreCase));
-            var fields = legacy ? xml.Root.Elements().First(x => x.Name.LocalName.Equals("ModInfo", StringComparison.OrdinalIgnoreCase)) : xml.Root;
+            var legacyFields = root.Elements().FirstOrDefault(x =>
+                x.Name.LocalName.Equals("ModInfo", StringComparison.OrdinalIgnoreCase));
+            var legacy = legacyFields is not null;
+            var fields = legacyFields ?? root;
             string Value(string name) => fields.Elements().FirstOrDefault(x =>
                 x.Name.LocalName.Equals(name, StringComparison.OrdinalIgnoreCase))?.Attribute("value")?.Value.Trim() ?? "";
 

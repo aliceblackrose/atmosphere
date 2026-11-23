@@ -64,18 +64,48 @@ public sealed class ModInventoryTests
     }
 
     [Fact]
-    public void Scan_FlagsDuplicateInternalNames()
+    public void Scan_FlagsAllValidCaseInsensitiveDuplicatesButPreservesOtherWarnings()
     {
         using var sandbox = new TempDirectory();
-        foreach (var name in new[] { "One", "Two" })
-        {
-            var directory = Path.Combine(sandbox.Path, name);
-            Directory.CreateDirectory(directory);
-            File.WriteAllText(Path.Combine(directory, "ModInfo.xml"),
-                "<xml><Name value=\"Same\"/><DisplayName value=\"Same\"/><Version value=\"1.0\"/></xml>");
-        }
+        WriteMod(sandbox.Path, "First", "Same", "1.0");
+        WriteMod(sandbox.Path, "Another", "sAME", "1.0");
+        WriteMod(sandbox.Path, "Third", "same", "1.0");
+        WriteMod(sandbox.Path, "Malformed", "Same", "invalid");
+        WriteMod(sandbox.Path, "OnlyValid", "Solo", "1.0");
+        WriteMod(sandbox.Path, "OnlyInvalid", "Solo", "invalid");
 
-        Assert.All(ModInventory.Scan(sandbox.Path), mod => Assert.False(mod.IsValid));
+        var mods = ModInventory.Scan(sandbox.Path);
+        Assert.Equal(mods.Select(mod => mod.FolderName).OrderBy(name => name, StringComparer.OrdinalIgnoreCase),
+            mods.Select(mod => mod.FolderName));
+        Assert.Equal("OnlyValid", Assert.Single(mods, mod => mod.IsValid).FolderName);
+        var duplicates = mods.Where(mod => !mod.IsValid &&
+            mod.Name.Equals("same", StringComparison.OrdinalIgnoreCase) && mod.Version == "1.0").ToArray();
+        Assert.Equal(3, duplicates.Length);
+        Assert.All(duplicates, mod => Assert.Contains("Duplicate internal mod Name", mod.Warning));
+        Assert.Contains("Version must be numeric", mods.Single(mod => mod.FolderName == "Malformed").Warning);
+        Assert.Contains("Version must be numeric", mods.Single(mod => mod.FolderName == "OnlyInvalid").Warning);
+    }
+
+    [Fact]
+    public void Scan_DoesNotConfuseCaseDistinctFoldersWithDifferentModNames()
+    {
+        using var sandbox = new TempDirectory();
+        WriteMod(sandbox.Path, "Echo", "Unique", "1.0");
+        // A case-insensitive volume cannot host both directories.
+        if (Directory.Exists(Path.Combine(sandbox.Path, "echo"))) return;
+
+        WriteMod(sandbox.Path, "echo", "Same", "1.0");
+        WriteMod(sandbox.Path, "Other", "same", "1.0");
+
+        var mods = ModInventory.Scan(sandbox.Path);
+        Assert.Equal("Unique", Assert.Single(mods, mod => mod.IsValid).Name);
+    }
+
+    private static void WriteMod(string root, string folder, string name, string version)
+    {
+        var directory = Directory.CreateDirectory(Path.Combine(root, folder));
+        File.WriteAllText(Path.Combine(directory.FullName, "ModInfo.xml"),
+            $"""<xml><Name value="{name}"/><DisplayName value="{name}"/><Version value="{version}"/></xml>""");
     }
 }
 
